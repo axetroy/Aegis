@@ -1,5 +1,3 @@
----
-
 # Aegis Architecture Whitepaper
 
 ### Secure, Capability-Based, Worker-Isolated UI Runtime
@@ -7,8 +5,6 @@
 **Project:** Aegis
 **Version:** 1.0
 **Status:** Architecture Proposal
-
----
 
 # 1. 摘要
 
