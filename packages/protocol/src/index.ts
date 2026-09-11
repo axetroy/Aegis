@@ -6,3 +6,4 @@
 
 export * from './ui';
 export * from './event';
+export * from './capability';

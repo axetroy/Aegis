@@ -34,6 +34,8 @@ export default defineConfig({
       '@aegis/react': path.resolve(__dirname, 'packages/react/src'),
       '@aegis/renderer': path.resolve(__dirname, 'packages/renderer/src'),
       '@aegis/runtime': path.resolve(__dirname, 'packages/runtime/src'),
+      '@aegis/security': path.resolve(__dirname, 'packages/security/src'),
+      '@aegis/capabilities': path.resolve(__dirname, 'packages/capabilities/src'),
     },
   },
 });

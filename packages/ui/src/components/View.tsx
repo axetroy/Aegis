@@ -7,6 +7,8 @@
 import React from 'react';
 import { ViewProps } from '../types';
 
+export type { ViewProps };
+
 export const View: React.FC<ViewProps> = ({
   style,
   children,

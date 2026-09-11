@@ -32,6 +32,14 @@ export interface BaseStyle {
   borderStyle?: CSSProperties['borderStyle'];
   opacity?: CSSProperties['opacity'];
   overflow?: CSSProperties['overflow'];
+  position?: CSSProperties['position'];
+  top?: CSSProperties['top'];
+  left?: CSSProperties['left'];
+  right?: CSSProperties['right'];
+  bottom?: CSSProperties['bottom'];
+  maxWidth?: CSSProperties['maxWidth'];
+  boxShadow?: CSSProperties['boxShadow'];
+  zIndex?: CSSProperties['zIndex'];
 }
 
 // View 组件属性

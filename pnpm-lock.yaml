@@ -122,6 +122,25 @@ importers:
         specifier: ^5.0.0
         version: 5.4.21(@types/node@22.20.2)
 
+  packages/capabilities:
+    dependencies:
+      '@aegis/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@aegis/security':
+        specifier: workspace:*
+        version: link:../security
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.2
+        version: 22.20.2
+      typescript:
+        specifier: ^5.1.0
+        version: 5.9.3
+      vitest:
+        specifier: ^0.34.0
+        version: 0.34.6(jsdom@22.1.0(supports-color@7.2.0))(supports-color@7.2.0)
+
   packages/protocol:
     devDependencies:
       typescript:
@@ -175,6 +194,22 @@ importers:
       typescript:
         specifier: ^5.1.0
         version: 5.9.3
+
+  packages/security:
+    dependencies:
+      '@aegis/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.2
+        version: 22.20.2
+      typescript:
+        specifier: ^5.1.0
+        version: 5.9.3
+      vitest:
+        specifier: ^0.34.0
+        version: 0.34.6(jsdom@22.1.0(supports-color@7.2.0))(supports-color@7.2.0)
 
   packages/ui:
     dependencies:
