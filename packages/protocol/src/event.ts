@@ -34,7 +34,7 @@ export interface EventData {
   nodeId: string;
   handlerId: string;
   timestamp: number;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 // 事件协议消息

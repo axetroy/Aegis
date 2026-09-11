@@ -2,7 +2,7 @@
  * @aegis/renderer DOM Renderer 单元测试
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AegisDOMRenderer, createRenderer, type RendererConfig } from './dom-renderer';
 import { NodeType, UIMessageType } from '@aegis/protocol';
 

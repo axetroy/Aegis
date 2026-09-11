@@ -55,7 +55,8 @@ describe('NetworkCapability E2E', () => {
       storage: { quota: '5MB' },
     };
     expect(() => validateCapabilityPolicy(policy)).not.toThrow();
-    expect(isNetworkAllowed('https://api.example.com/v1', policy.network!)).toBe(true);
-    expect(isNetworkAllowed('https://evil.com', policy.network!)).toBe(false);
+    const networkPolicy = policy.network as { allow: string[] };
+    expect(isNetworkAllowed('https://api.example.com/v1', networkPolicy)).toBe(true);
+    expect(isNetworkAllowed('https://evil.com', networkPolicy)).toBe(false);
   });
 });

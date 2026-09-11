@@ -14,7 +14,7 @@ export interface RuntimeConfig {
 
 // 应用状态
 export interface AppState {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // 事件处理器函数类型
@@ -40,7 +40,7 @@ export class AegisWorkerRuntime {
   }
 
   // 处理消息
-  private handleMessage(message: { type: string; payload?: any }): void {
+  private handleMessage(message: { type: string; payload?: unknown }): void {
     switch (message.type) {
       case UIMessageType.NodeCreated:
       case UIMessageType.NodeUpdated:
@@ -51,7 +51,7 @@ export class AegisWorkerRuntime {
       case EventMessageType.Dispatch:
         // 处理事件
         if (message.payload) {
-          this.handleEvent(message.payload);
+          this.handleEvent(message.payload as EventData);
         }
         break;
 
@@ -119,7 +119,7 @@ export class AegisWorkerRuntime {
   }
 
   // 发送 UI 更新
-  sendUIUpdate(type: UIMessageType, payload: any): void {
+  sendUIUpdate(type: UIMessageType, payload: unknown): void {
     const message = {
       type,
       id: generateId(),

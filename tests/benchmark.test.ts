@@ -95,8 +95,8 @@ describe('Aegis Performance Benchmarks', () => {
           children: [],
         };
 
-        if (nodes[parentId]) {
-          nodes[parentId].children!.push(nodeId);
+        if (nodes[parentId] && nodes[parentId].children) {
+          nodes[parentId].children.push(nodeId);
         }
       }
 

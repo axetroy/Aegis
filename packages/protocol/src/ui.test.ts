@@ -2,7 +2,7 @@
  * @aegis/protocol UI Protocol 单元测试
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   NodeType,
   UIOperationType,
@@ -11,7 +11,6 @@ import {
   createMessage,
   type NodeProps,
   type UIOperation,
-  type UIMessage,
 } from './ui';
 
 describe('@aegis/protocol/ui', () => {
@@ -189,7 +188,7 @@ describe('@aegis/protocol/ui', () => {
 
       expect(node.id).toBe('test-node');
       expect(node.type).toBe(NodeType.View);
-      expect(node.props.style.display).toBe('flex');
+      expect((node.props['style'] as { display: string }).display).toBe('flex');
       expect(node.children).toHaveLength(2);
     });
 

@@ -6,7 +6,18 @@
 
 import { NodeType, generateId, createMessage, UIMessageType } from '@aegis/protocol';
 
+
+// Aegis 实例类型
+export interface AegisInstance {
+  id: string;
+  type: NodeType;
+  props: Record<string, unknown>;
+  children: string[];
+  parent?: AegisInstance | null;
+}
+
 // 节点类型映射
+
 const NODE_TYPE_MAP: Record<string, NodeType> = {
   View: NodeType.View,
   Text: NodeType.Text,
@@ -16,7 +27,7 @@ const NODE_TYPE_MAP: Record<string, NodeType> = {
 };
 
 // 创建实例
-export function createInstance(type: string, props: Record<string, any>): any {
+export function createInstance(type: string, props: Record<string, unknown>): AegisInstance {
   const nodeType = NODE_TYPE_MAP[type] || NodeType.View;
 
   return {
@@ -31,7 +42,7 @@ export function createInstance(type: string, props: Record<string, any>): any {
 }
 
 // 创建文本实例
-export function createTextInstance(text: string): any {
+export function createTextInstance(text: string): AegisInstance {
   return {
     id: generateId(),
     type: NodeType.Text,
@@ -43,12 +54,12 @@ export function createTextInstance(text: string): any {
 }
 
 // 追加子节点
-export function appendInitialChild(parent: any, child: any): void {
+export function appendInitialChild(parent: AegisInstance, child: AegisInstance): void {
   parent.children.push(child.id);
 }
 
 // 插入子节点
-export function insertBefore(parent: any, child: any, beforeChild: any): void {
+export function insertBefore(parent: AegisInstance, child: AegisInstance, beforeChild: AegisInstance): void {
   const index = parent.children.indexOf(beforeChild.id);
   if (index !== -1) {
     parent.children.splice(index, 0, child.id);
@@ -58,7 +69,7 @@ export function insertBefore(parent: any, child: any, beforeChild: any): void {
 }
 
 // 移除子节点
-export function removeChild(parent: any, child: any): void {
+export function removeChild(parent: AegisInstance, child: AegisInstance): void {
   const index = parent.children.indexOf(child.id);
   if (index !== -1) {
     parent.children.splice(index, 1);
@@ -67,29 +78,34 @@ export function removeChild(parent: any, child: any): void {
 
 // 最终化属性
 export function finalizeInitialChildren(
-  instance: any,
-  type: string,
-  props: Record<string, any>
+  _instance: AegisInstance,
+  _type: string,
+  _props: Record<string, unknown>
 ): boolean {
   // 返回 true 表示需要提交更新
   return true;
 }
 
 // 深度比较两个值
-function deepEqual(a: any, b: any): boolean {
+function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a === null || b === null) return false;
   if (typeof a !== typeof b) return false;
   if (typeof a !== 'object') return a === b;
 
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') {
+    return false;
+  }
+  const aObj = a as Record<string, unknown>;
+  const bObj = b as Record<string, unknown>;
+  const keysA = Object.keys(aObj);
+  const keysB = Object.keys(bObj);
 
   if (keysA.length !== keysB.length) return false;
 
   for (const key of keysA) {
     if (!keysB.includes(key)) return false;
-    if (!deepEqual(a[key], b[key])) return false;
+    if (!deepEqual(aObj[key], bObj[key])) return false;
   }
 
   return true;
@@ -97,12 +113,12 @@ function deepEqual(a: any, b: any): boolean {
 
 // 准备更新
 export function prepareUpdate(
-  instance: any,
+  instance: AegisInstance,
   type: string,
-  oldProps: Record<string, any>,
-  newProps: Record<string, any>,
-): null | Record<string, any> {
-  const updatePayload: Record<string, any> = {};
+  oldProps: Record<string, unknown>,
+  newProps: Record<string, unknown>,
+): null | Record<string, unknown> {
+  const updatePayload: Record<string, unknown> = {};
 
   // 比较 props 变化
   for (const key in newProps) {
@@ -123,8 +139,8 @@ export function prepareUpdate(
 
 // 提交更新
 export function commitUpdate(
-  instance: any,
-  updatePayload: Record<string, any>
+  instance: AegisInstance,
+  updatePayload: Record<string, unknown>
 ): void {
   // 合并更新到 instance
   Object.assign(instance.props, updatePayload);
@@ -140,8 +156,8 @@ export function commitUpdate(
 }
 
 // 提交文本更新
-export function commitTextUpdate(instance: any, text: string): void {
-  instance.props.value = text;
+export function commitTextUpdate(instance: AegisInstance, text: string): void {
+  instance.props['value'] = text;
 
   const message = createMessage(UIMessageType.UpdateNode, {
     id: instance.id,
@@ -152,7 +168,7 @@ export function commitTextUpdate(instance: any, text: string): void {
 }
 
 // 提交挂载
-export function commitMount(instance: any): void {
+export function commitMount(instance: AegisInstance): void {
   const message = createMessage(UIMessageType.CreateNode, {
     id: instance.id,
     type: instance.type,
@@ -164,7 +180,7 @@ export function commitMount(instance: any): void {
 }
 
 // 提交卸载
-export function commitUnmount(instance: any): void {
+export function commitUnmount(instance: AegisInstance): void {
   const message = createMessage(UIMessageType.DeleteNode, {
     id: instance.id,
   });
@@ -173,25 +189,25 @@ export function commitUnmount(instance: any): void {
 }
 
 // 获取父节点
-export function getParentInstance(instance: any): any | null {
+export function getParentInstance(instance: AegisInstance): AegisInstance | null {
   return instance.parent || null;
 }
 
 // 获取子节点
-export function getChildInstances(instance: any): any[] {
-  return instance.children || [];
+export function getChildInstances(instance: AegisInstance): string[] {
+  return instance.children;
 }
 
 // 获取文本内容
-export function getTextContent(instance: any): string {
+export function getTextContent(instance: AegisInstance): string {
   if (instance.type === NodeType.Text) {
-    return instance.props.value || '';
+    return (instance.props['value'] as string) || '';
   }
   return '';
 }
 
 // 检查是否是文本节点
-export function isTextInstance(instance: any): boolean {
+export function isTextInstance(instance: AegisInstance): boolean {
   return instance.type === NodeType.Text;
 }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { StorageCapability, LocalStorageBackend, WorkerStorageBackend, createStorageCapability } from './storage';
 import { PermissionManager } from '@aegis/security';
 import { CapabilityName, type AppManifest } from '@aegis/protocol';

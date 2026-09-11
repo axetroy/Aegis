@@ -21,15 +21,37 @@ import {
   cancelTimeout,
   now,
   supportsMicrotasks,
-  scheduleMicrotask,
   isPrimaryRenderer,
   supportsPersistence,
   supportsHydration,
+  type AegisInstance,
 } from './host-config';
 import { NodeType, UIMessageType } from '@aegis/protocol';
 
 // Mock postMessage
 const mockPostMessage = vi.fn();
+
+
+function getLastCall(): Record<string, unknown>[] {
+  const calls = mockPostMessage.mock.calls;
+  const last = calls[calls.length - 1];
+  if (!last) {
+    throw new Error('postMessage was not called');
+  }
+  return last;
+}
+
+// 构造测试实例
+function makeInstance(partial: Partial<AegisInstance> = {}): AegisInstance {
+  return {
+    id: 'test',
+    type: NodeType.View,
+    props: {},
+    children: [],
+    ...partial,
+  };
+}
+
 Object.defineProperty(globalThis, 'self', {
   value: {
     postMessage: mockPostMessage,
@@ -109,8 +131,8 @@ describe('@aegis/react/host-config', () => {
 
   describe('appendInitialChild', () => {
     it('should add child to parent', () => {
-      const parent = { id: 'parent', children: [] };
-      const child = { id: 'child' };
+      const parent = makeInstance({ id: 'parent', children: [] });
+      const child = makeInstance({ id: 'child' });
 
       appendInitialChild(parent, child);
 
@@ -118,9 +140,9 @@ describe('@aegis/react/host-config', () => {
     });
 
     it('should add multiple children', () => {
-      const parent = { id: 'parent', children: [] };
-      const child1 = { id: 'child1' };
-      const child2 = { id: 'child2' };
+      const parent = makeInstance({ id: 'parent', children: [] });
+      const child1 = makeInstance({ id: 'child1' });
+      const child2 = makeInstance({ id: 'child2' });
 
       appendInitialChild(parent, child1);
       appendInitialChild(parent, child2);
@@ -131,9 +153,9 @@ describe('@aegis/react/host-config', () => {
 
   describe('insertBefore', () => {
     it('should insert child before specified child', () => {
-      const parent = { id: 'parent', children: ['child1', 'child3'] };
-      const child = { id: 'child2' };
-      const beforeChild = { id: 'child3' };
+      const parent = makeInstance({ id: 'parent', children: ['child1', 'child3'] });
+      const child = makeInstance({ id: 'child2' });
+      const beforeChild = makeInstance({ id: 'child3' });
 
       insertBefore(parent, child, beforeChild);
 
@@ -141,9 +163,9 @@ describe('@aegis/react/host-config', () => {
     });
 
     it('should append if before child not found', () => {
-      const parent = { id: 'parent', children: ['child1'] };
-      const child = { id: 'child2' };
-      const beforeChild = { id: 'nonexistent' };
+      const parent = makeInstance({ id: 'parent', children: ['child1'] });
+      const child = makeInstance({ id: 'child2' });
+      const beforeChild = makeInstance({ id: 'nonexistent' });
 
       insertBefore(parent, child, beforeChild);
 
@@ -153,8 +175,8 @@ describe('@aegis/react/host-config', () => {
 
   describe('removeChild', () => {
     it('should remove child from parent', () => {
-      const parent = { id: 'parent', children: ['child1', 'child2', 'child3'] };
-      const child = { id: 'child2' };
+      const parent = makeInstance({ id: 'parent', children: ['child1', 'child2', 'child3'] });
+      const child = makeInstance({ id: 'child2' });
 
       removeChild(parent, child);
 
@@ -162,8 +184,8 @@ describe('@aegis/react/host-config', () => {
     });
 
     it('should do nothing if child not found', () => {
-      const parent = { id: 'parent', children: ['child1'] };
-      const child = { id: 'nonexistent' };
+      const parent = makeInstance({ id: 'parent', children: ['child1'] });
+      const child = makeInstance({ id: 'nonexistent' });
 
       removeChild(parent, child);
 
@@ -173,7 +195,7 @@ describe('@aegis/react/host-config', () => {
 
   describe('finalizeInitialChildren', () => {
     it('should return true', () => {
-      const instance = { id: 'test' };
+      const instance = makeInstance();
       const result = finalizeInitialChildren(instance, 'View', { style: {} });
       expect(result).toBe(true);
     });
@@ -181,7 +203,7 @@ describe('@aegis/react/host-config', () => {
 
   describe('prepareUpdate', () => {
     it('should return null if no changes', () => {
-      const instance = { id: 'test' };
+      const instance = makeInstance();
       const oldProps = { style: { color: 'red' } };
       const newProps = { style: { color: 'red' } };
 
@@ -190,7 +212,7 @@ describe('@aegis/react/host-config', () => {
     });
 
     it('should return update payload for changed props', () => {
-      const instance = { id: 'test' };
+      const instance = makeInstance();
       const oldProps = { style: { color: 'red' } };
       const newProps = { style: { color: 'blue' } };
 
@@ -199,7 +221,7 @@ describe('@aegis/react/host-config', () => {
     });
 
     it('should handle added props', () => {
-      const instance = { id: 'test' };
+      const instance = makeInstance();
       const oldProps = {};
       const newProps = { style: { color: 'red' } };
 
@@ -208,7 +230,7 @@ describe('@aegis/react/host-config', () => {
     });
 
     it('should handle removed props', () => {
-      const instance = { id: 'test' };
+      const instance = makeInstance();
       const oldProps = { style: { color: 'red' } };
       const newProps = {};
 
@@ -219,39 +241,30 @@ describe('@aegis/react/host-config', () => {
 
   describe('commitUpdate', () => {
     it('should update instance props', () => {
-      const instance = {
-        id: 'test',
-        props: { style: { color: 'red' } },
-      };
+      const instance = makeInstance({ props: { style: { color: 'red' } } });
       const updatePayload = { style: { color: 'blue' } };
 
       commitUpdate(instance, updatePayload);
 
-      expect(instance.props.style.color).toBe('blue');
+      expect((instance.props['style'] as { color: string }).color).toBe('blue');
     });
 
     it('should send update message', () => {
-      const instance = {
-        id: 'test',
-        props: { style: { color: 'red' } },
-      };
+      const instance = makeInstance({ props: { style: { color: 'red' } } });
       const updatePayload = { style: { color: 'blue' } };
 
       commitUpdate(instance, updatePayload);
 
       expect(mockPostMessage).toHaveBeenCalled();
-      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1]!;
-      expect(lastCall[0].type).toBe(UIMessageType.UpdateNode);
-      expect(lastCall[0].payload.id).toBe('test');
+      const lastCall = getLastCall();
+      expect(lastCall[0]['type']).toBe(UIMessageType.UpdateNode);
+      expect((lastCall[0]['payload'] as { id: string }).id).toBe('test');
     });
   });
 
   describe('commitTextUpdate', () => {
     it('should update text instance', () => {
-      const instance = {
-        id: 'text-1',
-        props: { value: 'old' },
-      };
+      const instance = makeInstance({ id: 'text-1', props: { value: 'old' } });
 
       commitTextUpdate(instance, 'new');
 
@@ -259,69 +272,64 @@ describe('@aegis/react/host-config', () => {
     });
 
     it('should send update message', () => {
-      const instance = {
-        id: 'text-1',
-        props: { value: 'old' },
-      };
+      const instance = makeInstance({ id: 'text-1', props: { value: 'old' } });
 
       commitTextUpdate(instance, 'new');
 
       expect(mockPostMessage).toHaveBeenCalled();
-      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1]!;
-      expect(lastCall[0].type).toBe(UIMessageType.UpdateNode);
-      expect(lastCall[0].payload.props.value).toBe('new');
+      const lastCall = getLastCall();
+      expect(lastCall[0]['type']).toBe(UIMessageType.UpdateNode);
+      expect((lastCall[0]['payload'] as { props: { value: string } }).props.value).toBe('new');
     });
   });
 
   describe('commitMount', () => {
     it('should send create message', () => {
-      const instance = {
+      const instance = makeInstance({
         id: 'new-node',
         type: NodeType.View,
         props: { style: { display: 'flex' } },
         children: ['child1'],
-      };
+      });
 
       commitMount(instance);
 
       expect(mockPostMessage).toHaveBeenCalled();
-      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1]!;
-      expect(lastCall[0].type).toBe(UIMessageType.CreateNode);
-      expect(lastCall[0].payload.id).toBe('new-node');
-      expect(lastCall[0].payload.type).toBe(NodeType.View);
+      const lastCall = getLastCall();
+      expect(lastCall[0]['type']).toBe(UIMessageType.CreateNode);
+      expect((lastCall[0]['payload'] as { id: string }).id).toBe('new-node');
+      expect((lastCall[0]['payload'] as { type: NodeType }).type).toBe(NodeType.View);
     });
   });
 
   describe('commitUnmount', () => {
     it('should send delete message', () => {
-      const instance = {
-        id: 'delete-node',
-      };
+      const instance = makeInstance({ id: 'delete-node' });
 
       commitUnmount(instance);
 
       expect(mockPostMessage).toHaveBeenCalled();
-      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1]!;
-      expect(lastCall[0].type).toBe(UIMessageType.DeleteNode);
-      expect(lastCall[0].payload.id).toBe('delete-node');
+      const lastCall = getLastCall();
+      expect(lastCall[0]['type']).toBe(UIMessageType.DeleteNode);
+      expect((lastCall[0]['payload'] as { id: string }).id).toBe('delete-node');
     });
   });
 
   describe('getTextContent', () => {
     it('should return text value for Text instance', () => {
-      const instance = {
+      const instance = makeInstance({
         type: NodeType.Text,
         props: { value: 'Hello' },
-      };
+      });
 
       expect(getTextContent(instance)).toBe('Hello');
     });
 
     it('should return empty string for non-text instance', () => {
-      const instance = {
+      const instance = makeInstance({
         type: NodeType.View,
         props: {},
-      };
+      });
 
       expect(getTextContent(instance)).toBe('');
     });
@@ -329,12 +337,12 @@ describe('@aegis/react/host-config', () => {
 
   describe('isTextInstance', () => {
     it('should return true for text instance', () => {
-      const instance = { type: NodeType.Text };
+      const instance = makeInstance({ type: NodeType.Text });
       expect(isTextInstance(instance)).toBe(true);
     });
 
     it('should return false for non-text instance', () => {
-      const instance = { type: NodeType.View };
+      const instance = makeInstance({ type: NodeType.View });
       expect(isTextInstance(instance)).toBe(false);
     });
   });
@@ -349,7 +357,7 @@ describe('@aegis/react/host-config', () => {
 
   describe('cancelTimeout', () => {
     it('should call clearTimeout', () => {
-      const timeoutId = window.setTimeout(() => {}, 100);
+      const timeoutId = window.setTimeout(() => undefined, 100);
       cancelTimeout(timeoutId);
       // clearTimeout 不返回任何值，这里只验证函数被调用
     });

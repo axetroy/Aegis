@@ -4,7 +4,7 @@
  * 预定义的能力策略验证器
  */
 
-import { CapabilityName, type CapabilityPolicy } from '@aegis/protocol';
+import { type CapabilityPolicy } from '@aegis/protocol';
 import { type ResourceLimits } from './types';
 
 // 网络策略验证
@@ -85,8 +85,8 @@ export function parseMemorySize(size: string): number {
     throw new Error(`Invalid memory size format: ${size}`);
   }
 
-  const value = parseFloat(match[1]!);
-  const unit = match[2]!.toUpperCase();
+  const value = parseFloat(match[1] as string);
+  const unit = (match[2] as string).toUpperCase();
 
   switch (unit) {
     case 'B':
@@ -137,7 +137,7 @@ export function createResourceValidator(limits: ResourceLimits) {
     },
     checkNodes(count: number): boolean {
       if (!limits.uiNodes) return true;
-      return count <= limits.uiNodes!;
+      return count <= (limits.uiNodes as number);
     },
     checkMessageSize(bytes: number): boolean {
       if (!limits.maxMessageSize) return true;
@@ -146,7 +146,7 @@ export function createResourceValidator(limits: ResourceLimits) {
     },
     checkMessageRate(rate: number): boolean {
       if (!limits.messagesPerSecond) return true;
-      return rate <= limits.messagesPerSecond!;
+      return rate <= (limits.messagesPerSecond as number);
     },
   };
 }

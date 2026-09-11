@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, type ViewProps } from './View';
-import { Text } from './Text';
 import { BaseStyle } from '../types';
 
 export interface ListProps extends Omit<ViewProps, 'data'> {

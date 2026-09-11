@@ -19,15 +19,22 @@ export function useAegisEffect(
   dependencies?: readonly unknown[],
   capability?: string,
 ): void {
+  // 保持最新的 effect 与 capability 引用，避免重复订阅
+  const effectRef = React.useRef(effect);
+  effectRef.current = effect;
+  const capabilityRef = React.useRef(capability);
+  capabilityRef.current = capability;
+
   React.useEffect(() => {
     // 若指定了能力，则执行权限检查
-    if (capability) {
+    if (capabilityRef.current) {
       // 在实际实现中，此处通过 CapabilityManager 检查权限
-      // const allowed = await capabilityManager.requestCapability(capability);
+      // const allowed = await capabilityManager.requestCapability(capabilityRef.current);
       // if (!allowed) return;
     }
-    const cleanup = effect();
+    const cleanup = effectRef.current();
     return cleanup;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 }
 

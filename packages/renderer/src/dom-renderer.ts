@@ -16,7 +16,7 @@ import {
 interface NodeMap {
   [id: string]: {
     dom: HTMLElement;
-    props: Record<string, any>;
+    props: Record<string, unknown>;
   };
 }
 
@@ -66,25 +66,25 @@ export class AegisDOMRenderer {
   }
 
   // 处理消息（公开方法用于测试）
-  public handleMessage(message: { type: string; payload: any }): void {
+  public handleMessage(message: { type: string; payload: Record<string, unknown> }): void {
     switch (message.type) {
       case UIMessageType.CreateNode:
-        this.createNode(message.payload);
+        this.createNode(message.payload as unknown as NodeProps & { parentId?: string });
         break;
       case UIMessageType.UpdateNode:
-        this.updateNode(message.payload);
+        this.updateNode(message.payload as unknown as { id: string; props: Record<string, unknown> });
         break;
       case UIMessageType.DeleteNode:
-        this.deleteNode(message.payload);
+        this.deleteNode(message.payload as unknown as { id: string });
         break;
       case UIMessageType.InsertNode:
-        this.insertNode(message.payload);
+        this.insertNode(message.payload as unknown as { parentId: string; node: NodeProps; index: number });
         break;
       case UIMessageType.MoveNode:
-        this.moveNode(message.payload);
+        this.moveNode(message.payload as unknown as { nodeId: string; newParentId: string; index: number });
         break;
       case UIMessageType.SyncTree:
-        this.syncTree(message.payload);
+        this.syncTree(message.payload as unknown as { root: NodeProps; nodes: Record<string, NodeProps> });
         break;
     }
   }
@@ -125,7 +125,7 @@ export class AegisDOMRenderer {
   }
 
   // 创建 DOM 元素
-  private createElement(type: NodeType, props: Record<string, any>): HTMLElement {
+  private createElement(type: NodeType, props: Record<string, unknown>): HTMLElement {
     let element: HTMLElement;
 
     switch (type) {
@@ -134,16 +134,16 @@ export class AegisDOMRenderer {
         break;
       case 'text':
         element = document.createElement('span');
-        element.textContent = props['value'] || '';
+        element.textContent = (props['value'] as string) || '';
         break;
       case 'button':
         element = document.createElement('button');
-        element.textContent = props['children'] || '';
+        element.textContent = (props['children'] as string) || '';
         break;
       case 'input':
         element = document.createElement('input');
-        (element as HTMLInputElement).value = props['value'] || '';
-        (element as HTMLInputElement).placeholder = props['placeholder'] || '';
+        (element as HTMLInputElement).value = (props['value'] as string) || '';
+        (element as HTMLInputElement).placeholder = (props['placeholder'] as string) || '';
         break;
       case 'scroll-view':
         element = document.createElement('div');
@@ -160,29 +160,29 @@ export class AegisDOMRenderer {
   }
 
   // 应用样式
-  private applyStyles(element: HTMLElement, props: Record<string, any>): void {
-    const style = (props['style'] as Record<string, any>) || {};
+  private applyStyles(element: HTMLElement, props: Record<string, unknown>): void {
+    const style = (props['style'] as Record<string, unknown>) || {};
+    const styleValue = (key: string): string =>
+      typeof style[key] === 'number' ? `${style[key]}px` : String(style[key] ?? '');
 
-    if (style['display']) element.style.display = style['display'];
-    if (style['flexDirection']) element.style.flexDirection = style['flexDirection'];
-    if (style['justifyContent']) element.style.justifyContent = style['justifyContent'];
-    if (style['alignItems']) element.style.alignItems = style['alignItems'];
-    if (style['width'])
-      element.style.width = typeof style['width'] === 'number' ? `${style['width']}px` : style['width'];
-    if (style['height'])
-      element.style.height = typeof style['height'] === 'number' ? `${style['height']}px` : style['height'];
-    if (style['padding']) element.style.padding = `${style['padding']}px`;
-    if (style['margin']) element.style.margin = `${style['margin']}px`;
-    if (style['backgroundColor']) element.style.backgroundColor = style['backgroundColor'];
-    if (style['borderRadius']) element.style.borderRadius = `${style['borderRadius']}px`;
-    if (style['opacity']) element.style.opacity = style['opacity'].toString();
-    if (style['fontSize']) element.style.fontSize = `${style['fontSize']}px`;
-    if (style['color']) element.style.color = style['color'];
-    if (style['textAlign']) element.style.textAlign = style['textAlign'];
+    if (style['display']) element.style.display = styleValue('display');
+    if (style['flexDirection']) element.style.flexDirection = styleValue('flexDirection');
+    if (style['justifyContent']) element.style.justifyContent = styleValue('justifyContent');
+    if (style['alignItems']) element.style.alignItems = styleValue('alignItems');
+    if (style['width']) element.style.width = styleValue('width');
+    if (style['height']) element.style.height = styleValue('height');
+    if (style['padding']) element.style.padding = styleValue('padding');
+    if (style['margin']) element.style.margin = styleValue('margin');
+    if (style['backgroundColor']) element.style.backgroundColor = styleValue('backgroundColor');
+    if (style['borderRadius']) element.style.borderRadius = styleValue('borderRadius');
+    if (style['opacity']) element.style.opacity = styleValue('opacity');
+    if (style['fontSize']) element.style.fontSize = styleValue('fontSize');
+    if (style['color']) element.style.color = styleValue('color');
+    if (style['textAlign']) element.style.textAlign = styleValue('textAlign');
   }
 
   // 添加事件监听
-  private addEventListeners(nodeId: string, element: HTMLElement, props: Record<string, any>): void {
+  private addEventListeners(nodeId: string, element: HTMLElement, props: Record<string, unknown>): void {
     // 点击事件
     if (props['onClick']) {
       const handler = (event: Event) => {
@@ -205,7 +205,7 @@ export class AegisDOMRenderer {
   }
 
   // 发送事件到 Worker
-  private sendEvent(nodeId: string, eventType: string, data: Record<string, any>): void {
+  private sendEvent(nodeId: string, eventType: string, data: Record<string, unknown>): void {
     const message = {
       type: EventMessageType.Dispatch,
       id: generateId(),
@@ -224,7 +224,7 @@ export class AegisDOMRenderer {
   }
 
   // 更新节点
-  private updateNode(payload: { id: string; props: Record<string, any> }): void {
+  private updateNode(payload: { id: string; props: Record<string, unknown> }): void {
     const { id, props } = payload;
     const node = this.nodes[id];
 
@@ -236,7 +236,7 @@ export class AegisDOMRenderer {
 
       // 更新文本内容
       if (props['value'] !== undefined) {
-        node.dom.textContent = props['value'];
+        node.dom.textContent = String(props['value']);
       }
 
       this.sendResponse(UIMessageType.NodeUpdated, id, true);

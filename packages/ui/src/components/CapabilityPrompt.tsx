@@ -3,7 +3,7 @@ import { View } from './View';
 import { Text } from './Text';
 import { Button } from './Button';
 import { BaseStyle } from '../types';
-import { CapabilityName, PermissionDecision } from '@aegis/protocol';
+import { CapabilityName } from '@aegis/protocol';
 
 export interface CapabilityPromptProps {
   capability: CapabilityName;

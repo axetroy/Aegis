@@ -6,7 +6,7 @@
 
 // 应用状态
 interface AppState {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 let state: AppState = {};
@@ -159,7 +159,7 @@ function renderCounterApp() {
 
   // 注册事件处理器
   eventHandlers.set('handle-decrement', () => {
-    state['count'] = (state['count'] || 0) - 1;
+    state['count'] = ((state['count'] as number) || 0) - 1;
     updateCountDisplay();
   });
 
@@ -169,7 +169,7 @@ function renderCounterApp() {
   });
 
   eventHandlers.set('handle-increment', () => {
-    state['count'] = (state['count'] || 0) + 1;
+    state['count'] = ((state['count'] as number) || 0) + 1;
     updateCountDisplay();
   });
 }
@@ -208,7 +208,7 @@ function updateCountDisplay() {
 }
 
 // 处理事件
-function handleEvent(eventData: { handlerId: string; data?: any }): void {
+function handleEvent(eventData: { handlerId: string; data?: unknown }): void {
   const { handlerId } = eventData;
   const handler = eventHandlers.get(handlerId);
 

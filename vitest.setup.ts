@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 
 // Mock window.postMessage（jsdom 要求 2 个参数）
 const originalPostMessage = window.postMessage.bind(window);
-window.postMessage = function (message: any, targetOriginOrOptions?: any) {
+window.postMessage = function (message: unknown, targetOriginOrOptions?: unknown) {
   // 在测试环境中转发原始调用
   if (typeof targetOriginOrOptions === 'string') {
     return originalPostMessage(message, targetOriginOrOptions);

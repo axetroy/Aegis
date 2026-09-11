@@ -18,7 +18,7 @@ export enum NodeType {
 export interface NodeProps {
   id: string;
   type: NodeType;
-  props: Record<string, any>;
+  props: Record<string, unknown>;
   children?: string[]; // 子节点 ID 列表
 }
 
@@ -37,7 +37,7 @@ export interface UIOperation {
   nodeId: string;
   parentId?: string;
   index?: number;
-  props?: Record<string, any>;
+  props?: Record<string, unknown>;
 }
 
 // UI 协议消息
@@ -74,7 +74,7 @@ export interface UpdateNodeMessage extends BaseMessage {
   type: UIMessageType.UpdateNode;
   payload: {
     id: string;
-    props: Record<string, any>;
+    props: Record<string, unknown>;
   };
 }
 
@@ -165,7 +165,7 @@ export interface BaseMessagePayload {
   type: string;
   id: string;
   timestamp: number;
-  payload: any;
+  payload: unknown;
 }
 
 export function createMessage<T extends BaseMessagePayload>(

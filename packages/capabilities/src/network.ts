@@ -5,7 +5,7 @@
  */
 
 import { type PermissionManager, isNetworkAllowed } from '@aegis/security';
-import { type CapabilityPolicy } from '@aegis/protocol';
+import { CapabilityName, type CapabilityPolicy } from '@aegis/protocol';
 
 // 网络请求选项
 export interface NetworkRequestOptions {
@@ -75,7 +75,7 @@ export class NetworkCapability {
    */
   async request(options: NetworkRequestOptions): Promise<NetworkResponse> {
     // 检查权限
-    const allowed = await this.permissionManager.requestCapability('network' as any);
+    const allowed = await this.permissionManager.requestCapability(CapabilityName.Network);
     if (!allowed) {
       throw new Error('Network access denied');
     }
@@ -129,7 +129,7 @@ export class NetworkCapability {
   /**
    * 执行底层网络请求
    */
-  private async executeRequest(options: NetworkRequestOptions): Promise<NetworkResponse> {
+  private async executeRequest(_options: NetworkRequestOptions): Promise<NetworkResponse> {
     // 在真实环境中，这里会通过宿主的安全网络代理执行请求
     // 在测试环境中，我们模拟一个响应
     return {

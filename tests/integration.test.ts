@@ -4,7 +4,7 @@
  * 验证从 Worker 到 Renderer 的完整数据流
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   NodeType,
   UIMessageType,

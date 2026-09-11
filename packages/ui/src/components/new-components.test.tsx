@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Input } from './Input';
@@ -72,7 +72,9 @@ describe('ScrollView Component', () => {
     render(<ScrollView onScroll={handleScroll} />);
     const scrollView = document.querySelector('div[style*="overflow: auto"]');
     expect(scrollView).toBeInTheDocument();
-    fireEvent.scroll(scrollView!);
+    if (scrollView) {
+      fireEvent.scroll(scrollView);
+    }
     expect(handleScroll).toHaveBeenCalled();
   });
 });
@@ -126,8 +128,8 @@ describe('CapabilityPrompt Component', () => {
       <CapabilityPrompt
         capability={CapabilityName.Storage}
         description="需要访问存储空间"
-        onAllow={() => {}}
-        onDeny={() => {}}
+        onAllow={() => undefined}
+        onDeny={() => undefined}
       />
     );
     expect(screen.getByText('storage 权限请求')).toBeInTheDocument();

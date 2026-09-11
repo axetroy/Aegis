@@ -13,12 +13,16 @@ describe('LocationCapability', () => {
   });
 
   it('watchPosition 应返回 watchId', async () => {
-    const id = await location.watchPosition(() => {});
+    const id = await location.watchPosition(() => {
+      // 位置更新回调（测试中不处理）
+    });
     expect(typeof id).toBe('number');
   });
 
   it('clearWatch 应停止监控', async () => {
-    const id = await location.watchPosition(() => {});
+    const id = await location.watchPosition(() => {
+      // 位置更新回调（测试中不处理）
+    });
     await location.clearWatch(id);
     // 不应抛出
     expect(() => location.clearWatch(id)).not.toThrow();

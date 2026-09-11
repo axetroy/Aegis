@@ -2,8 +2,8 @@
  * @aegis/runtime Worker Runtime 单元测试
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AegisWorkerRuntime, createRuntime, type RuntimeConfig, type AppState } from './worker-runtime';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AegisWorkerRuntime, createRuntime, type RuntimeConfig } from './worker-runtime';
 import { UIMessageType, EventMessageType, generateId } from '@aegis/protocol';
 
 // Mock postMessage
@@ -21,7 +21,7 @@ describe('@aegis/runtime/worker-runtime', () => {
 
   beforeEach(() => {
     mockPostMessage.mockClear();
-    (self.onmessage as any) = null;
+    (self.onmessage as unknown) = null;
 
     const config: RuntimeConfig = {
       appId: 'test-app',
@@ -76,7 +76,7 @@ describe('@aegis/runtime/worker-runtime', () => {
 
     it('should update state with function', () => {
       runtime.setState({ count: 0 });
-      runtime.setState((state) => ({ count: state.count + 1 }));
+      runtime.setState((state) => ({ count: ((state.count as number) || 0) + 1 }));
       expect(runtime.getState()).toEqual({ count: 1 });
     });
 
@@ -177,13 +177,15 @@ describe('@aegis/runtime/worker-runtime', () => {
       };
 
       // 模拟接收消息
-      self.onmessage!(new MessageEvent('message', { data: message }));
+      if (self.onmessage) {
+        self.onmessage(new MessageEvent('message', { data: message }));
+      }
 
       // 目前只是打印日志，没有其他副作用
     });
 
     it('should handle Error message', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
       const message = {
         type: UIMessageType.Error,
@@ -192,7 +194,9 @@ describe('@aegis/runtime/worker-runtime', () => {
         payload: { error: 'Test error' },
       };
 
-      self.onmessage!(new MessageEvent('message', { data: message }));
+      if (self.onmessage) {
+        self.onmessage(new MessageEvent('message', { data: message }));
+      }
 
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -220,7 +224,9 @@ describe('@aegis/runtime/worker-runtime', () => {
         },
       };
 
-      self.onmessage!(new MessageEvent('message', { data: dispatchMessage }));
+      if (self.onmessage) {
+        self.onmessage(new MessageEvent('message', { data: dispatchMessage }));
+      }
 
       // 处理器应该被调用
       expect(handler).toHaveBeenCalled();
@@ -246,7 +252,9 @@ describe('@aegis/runtime/worker-runtime', () => {
         },
       };
 
-      self.onmessage!(new MessageEvent('message', { data: dispatchMessage }));
+      if (self.onmessage) {
+        self.onmessage(new MessageEvent('message', { data: dispatchMessage }));
+      }
 
       // 等待异步操作
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -275,7 +283,7 @@ describe('@aegis/runtime/worker-runtime', () => {
     });
 
     it('should handle app function error', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
       const appFn = vi.fn().mockRejectedValue(new Error('App failed'));
       runtime.init(appFn);

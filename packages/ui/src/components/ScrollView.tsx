@@ -15,7 +15,7 @@ export const ScrollView: React.FC<ScrollViewProps> = ({
   children,
   onScroll,
   showsVerticalScrollIndicator = true,
-  showsHorizontalScrollIndicator = false,
+  showsHorizontalScrollIndicator: _showsHorizontalScrollIndicator = false,
 }) => {
   return (
     <div

@@ -178,5 +178,9 @@ function App() {
 }
 
 // 挂载应用
-const root = ReactDOM.createRoot(document.getElementById('app')!);
+const appElement = document.getElementById('app');
+if (!appElement) {
+  throw new Error('App mount point #app not found');
+}
+const root = ReactDOM.createRoot(appElement);
 root.render(<App />);

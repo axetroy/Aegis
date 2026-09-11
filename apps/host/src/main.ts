@@ -45,7 +45,14 @@ function createRenderer(config: RendererConfig) {
   const nodes = new Map<string, HTMLElement>();
 
   // 同步树
-  const syncTree = (payload: { root: any; nodes: Record<string, any> }) => {
+  interface HostNode {
+    id: string;
+    type: string;
+    props?: Record<string, unknown>;
+    children?: string[];
+  }
+
+  const syncTree = (payload: { root: HostNode; nodes: Record<string, HostNode> }) => {
     root.innerHTML = '';
     nodes.clear();
 
@@ -70,7 +77,7 @@ function createRenderer(config: RendererConfig) {
   };
 
   // 创建 DOM 元素
-  const createDOMElement = (props: { id: string; type: string; props: any }): HTMLElement => {
+  const createDOMElement = (props: HostNode): HTMLElement => {
     let element: HTMLElement;
 
     switch (props.type) {
@@ -79,15 +86,15 @@ function createRenderer(config: RendererConfig) {
         break;
       case 'text':
         element = document.createElement('span');
-        element.textContent = props.props?.value || '';
+        element.textContent = String(props.props?.['value'] ?? '');
         break;
       case 'button':
         element = document.createElement('button');
-        element.textContent = props.props?.children || '';
+        element.textContent = String(props.props?.['children'] ?? '');
         break;
       case 'input':
         element = document.createElement('input');
-        (element as HTMLInputElement).value = props.props?.value || '';
+        (element as HTMLInputElement).value = String(props.props?.['value'] ?? '');
         break;
       default:
         element = document.createElement('div');
@@ -99,7 +106,7 @@ function createRenderer(config: RendererConfig) {
       if (key === 'gap') {
         element.style.gap = `${value}px`;
       } else {
-        (element.style as any)[key] = typeof value === 'number' ? `${value}px` : value;
+        (element.style as unknown as Record<string, string>)[key] = typeof value === 'number' ? `${value}px` : String(value);
       }
     });
 
@@ -107,17 +114,17 @@ function createRenderer(config: RendererConfig) {
   };
 
   // 更新节点
-  const updateNode = (payload: { id: string; props: any }) => {
+  const updateNode = (payload: { id: string; props: Record<string, unknown> }) => {
     const element = nodes.get(payload.id);
     if (element) {
       if (payload.props?.value !== undefined) {
-        element.textContent = payload.props.value;
+        element.textContent = String(payload.props.value);
       }
     }
   };
 
   // 创建节点
-  const createNode = (payload: any) => {
+  const createNode = (payload: unknown) => {
     console.log('[Host] Create node:', payload);
   };
 

@@ -4,7 +4,7 @@
  * 提供命名空间的本地存储能力
  */
 
-import { PermissionDecision } from '@aegis/protocol';
+import { CapabilityName } from '@aegis/protocol';
 import { PermissionManager, type ResourceLimits } from '@aegis/security';
 
 // 存储后端接口
@@ -135,7 +135,7 @@ export class StorageCapability {
    */
   async get<T = unknown>(key: string): Promise<T | null> {
     const allowed = await this.permissionManager.requestCapability(
-      'storage' as any,
+      CapabilityName.Storage,
     );
     if (!allowed) {
       return null;
@@ -159,7 +159,7 @@ export class StorageCapability {
    */
   async set<T = unknown>(key: string, value: T): Promise<void> {
     const allowed = await this.permissionManager.requestCapability(
-      'storage' as any,
+      CapabilityName.Storage,
     );
     if (!allowed) {
       throw new Error('Storage access denied');
@@ -180,7 +180,7 @@ export class StorageCapability {
    */
   async remove(key: string): Promise<void> {
     const allowed = await this.permissionManager.requestCapability(
-      'storage' as any,
+      CapabilityName.Storage,
     );
     if (!allowed) {
       return;
@@ -194,7 +194,7 @@ export class StorageCapability {
    */
   async clear(): Promise<void> {
     const allowed = await this.permissionManager.requestCapability(
-      'storage' as any,
+      CapabilityName.Storage,
     );
     if (!allowed) {
       return;
@@ -214,7 +214,7 @@ export class StorageCapability {
    */
   async keys(): Promise<string[]> {
     const allowed = await this.permissionManager.requestCapability(
-      'storage' as any,
+      CapabilityName.Storage,
     );
     if (!allowed) {
       return [];
