@@ -1,5 +1,7 @@
 # Aegis
 
+![CI](https://github.com/axetroy/Aegis/actions/workflows/ci.yml/badge.svg)
+
 **让不受信任的代码构建 UI，但永远不能拥有宿主。**
 
 Aegis 是一个安全的应用运行时，允许第三方代码在隔离的环境中运行，同时提供完整的 React 开发体验。
