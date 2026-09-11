@@ -1,28 +1,28 @@
-# 07. Local Development Guide
+# Local Development Guide
 
-[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./roadmap-vision.md)
 
 本仓库当前处于 **design-first** 阶段。当前仓库内容主要是架构设计文档，尚未包含 `# 44. 项目结构` 中描述的完整实现目录。
 
 ## 当前仓库状态
 
-- 当前仓库的主入口是 `/home/runner/work/Aegis/Aegis/.agents/skills/aegis-design-index/SKILL.md`
-- 详细设计已经按主题拆分到 `docs/design/`
+- 当前仓库的主入口是 [`.agents/skills/aegis-design-index/SKILL.md`](../SKILL.md)
+- 详细设计已经按主题拆分到 [Aegis Design References](./README.md)
 - 目前更适合先完成文档拆解、概念校准、模块边界确认，再逐步落地代码
 
 ## 推荐阅读顺序
 
-1. `docs/design/01-foundation-and-security-model.md`
-2. `docs/design/02-runtime-architecture-and-protocol.md`
-3. `docs/design/03-capabilities-and-package-security.md`
-4. `docs/design/04-renderer-and-react-lifecycle.md`
-5. `docs/design/05-dataflow-performance-and-tooling.md`
-6. `docs/design/06-roadmap-and-vision.md`
+1. [Foundation and Security Model](./foundation-security-model.md)
+2. [Runtime Architecture and Protocol](./runtime-architecture-protocol.md)
+3. [Capabilities and Package Security](./capabilities-package-security.md)
+4. [Renderer and React Lifecycle](./renderer-react-lifecycle.md)
+5. [Dataflow, Performance, and Tooling](./dataflow-performance-tooling.md)
+6. [Roadmap and Vision](./roadmap-vision.md)
 
 如果你的目标是补充本地开发体验，应优先阅读：
 
-- `docs/design/05-dataflow-performance-and-tooling.md`：理解 DevTools、项目结构和调试面
-- `docs/design/06-roadmap-and-vision.md`：确认当前阶段应该先做什么、不应该先做什么
+- [Dataflow, Performance, and Tooling](./dataflow-performance-tooling.md)：理解 DevTools、项目结构和调试面
+- [Roadmap and Vision](./roadmap-vision.md)：确认当前阶段应该先做什么、不应该先做什么
 
 ## 按任务选读
 
@@ -30,8 +30,8 @@
 
 阅读：
 
-- `docs/design/01-foundation-and-security-model.md`
-- `docs/design/03-capabilities-and-package-security.md`
+- [Foundation and Security Model](./foundation-security-model.md)
+- [Capabilities and Package Security](./capabilities-package-security.md)
 
 适合任务：
 
@@ -43,8 +43,8 @@
 
 阅读：
 
-- `docs/design/02-runtime-architecture-and-protocol.md`
-- `docs/design/05-dataflow-performance-and-tooling.md`
+- [Runtime Architecture and Protocol](./runtime-architecture-protocol.md)
+- [Dataflow, Performance, and Tooling](./dataflow-performance-tooling.md)
 
 适合任务：
 
@@ -56,8 +56,8 @@
 
 阅读：
 
-- `docs/design/02-runtime-architecture-and-protocol.md`
-- `docs/design/04-renderer-and-react-lifecycle.md`
+- [Runtime Architecture and Protocol](./runtime-architecture-protocol.md)
+- [Renderer and React Lifecycle](./renderer-react-lifecycle.md)
 
 适合任务：
 
@@ -69,7 +69,7 @@
 
 阅读：
 
-- `docs/design/06-roadmap-and-vision.md`
+- [Roadmap and Vision](./roadmap-vision.md)
 
 适合任务：
 
@@ -88,7 +88,7 @@
 
 ## 从设计到实现的映射
 
-`docs/design/05-dataflow-performance-and-tooling.md` 中已经给出推荐目录结构：
+[Dataflow, Performance, and Tooling](./dataflow-performance-tooling.md) 中已经给出推荐目录结构：
 
 - `packages/runtime/`：Worker、调度、生命周期
 - `packages/react/`：reconciler、host-config
@@ -101,3 +101,7 @@
 - `apps/host/`、`apps/playground/`、`apps/inspector/`：宿主、演示、调试入口
 
 当前这些路径更多是**设计目标**而不是现状，因此本地开发的第一步仍然应该是先确认模块边界，再决定具体落地目录。
+
+---
+
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./roadmap-vision.md)

@@ -1,6 +1,6 @@
-# 05. Dataflow, Performance, and Tooling
+# Dataflow, Performance, and Tooling
 
-[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./renderer-react-lifecycle.md) · [Next →](./roadmap-vision.md)
 
 包含数据流、交互流程、安全边界总结、与 React / 小程序架构的关系、性能原则、DevTools 与项目结构。
 
@@ -404,3 +404,7 @@ aegis/
 ```
 
 ---
+
+---
+
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./renderer-react-lifecycle.md) · [Next →](./roadmap-vision.md)

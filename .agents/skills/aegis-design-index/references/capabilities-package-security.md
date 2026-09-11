@@ -1,6 +1,6 @@
-# 03. Capabilities and Package Security
+# Capabilities and Package Security
 
-[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./runtime-architecture-protocol.md) · [Next →](./renderer-react-lifecycle.md)
 
 包含 Capability 安全、Manifest、权限策略、Network / Storage、隔离、资源限制、Worker DoS 与包安全。
 
@@ -325,3 +325,7 @@ Install
 ```
 
 ---
+
+---
+
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./runtime-architecture-protocol.md) · [Next →](./renderer-react-lifecycle.md)

@@ -1,6 +1,6 @@
-# 02. Runtime Architecture and Protocol
+# Runtime Architecture and Protocol
 
-[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./foundation-security-model.md) · [Next →](./capabilities-package-security.md)
 
 包含总体架构、React 兼容层级、JSX、UI Protocol、协议校验、Node Namespace 与 Event Protocol。
 
@@ -403,3 +403,7 @@ interface AegisEvent {
 ```
 
 ---
+
+---
+
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./foundation-security-model.md) · [Next →](./capabilities-package-security.md)

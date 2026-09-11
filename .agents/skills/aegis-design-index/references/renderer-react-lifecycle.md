@@ -1,6 +1,6 @@
-# 04. Renderer and React Lifecycle
+# Renderer and React Lifecycle
 
-[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./capabilities-package-security.md) · [Next →](./dataflow-performance-tooling.md)
 
 包含应用身份、签名、动态导入、渲染器、可信计算基、UI Primitive、布局、Ref 与 React 生命周期。
 
@@ -319,3 +319,7 @@ Main
 ```
 
 ---
+
+---
+
+[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./capabilities-package-security.md) · [Next →](./dataflow-performance-tooling.md)
