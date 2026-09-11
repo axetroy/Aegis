@@ -12,11 +12,6 @@ export default defineConfig({
     sourcemap: true,
   },
   resolve: {
-    alias: {
-      '@aegis/ui': '@aegis/ui/src',
-      '@aegis/react': '@aegis/react/src',
-      '@aegis/protocol': '@aegis/protocol/src',
-      '@aegis/renderer': '@aegis/renderer/src',
-    },
+    conditions: ['source'],
   },
 });

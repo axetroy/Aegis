@@ -22,6 +22,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
+    "customConditions": ["source"],
 
     // 输出相关
     "declaration": true,

@@ -4,7 +4,7 @@
  * 在 Worker 中运行的应用运行时
  */
 
-import { UIMessage, UIMessageType, EventMessage, EventMessageType, createMessage } from '@aegis/protocol';
+import { UIMessageType, EventMessageType, generateId, type EventData } from '@aegis/protocol';
 
 // 运行时配置
 export interface RuntimeConfig {
@@ -17,12 +17,15 @@ export interface AppState {
   [key: string]: any;
 }
 
+// 事件处理器函数类型
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EventHandler = (...args: any[]) => any;
+
 // 运行时类
 export class AegisWorkerRuntime {
   private config: RuntimeConfig;
   private state: AppState = {};
-  private listeners: Map<string, Function> = new Map();
-  private reconciler: any = null;
+  private listeners: Map<string, EventHandler> = new Map();
 
   constructor(config: RuntimeConfig) {
     this.config = config;
@@ -37,7 +40,7 @@ export class AegisWorkerRuntime {
   }
 
   // 处理消息
-  private handleMessage(message: UIMessage | EventMessage): void {
+  private handleMessage(message: { type: string; payload?: any }): void {
     switch (message.type) {
       case UIMessageType.NodeCreated:
       case UIMessageType.NodeUpdated:
@@ -46,9 +49,10 @@ export class AegisWorkerRuntime {
         break;
 
       case EventMessageType.Dispatch:
-      case EventMessageType.BatchDispatch:
         // 处理事件
-        this.handleEvent(message as EventMessage);
+        if (message.payload) {
+          this.handleEvent(message.payload);
+        }
         break;
 
       case UIMessageType.Error:
@@ -58,45 +62,54 @@ export class AegisWorkerRuntime {
   }
 
   // 处理事件
-  private async handleEvent(message: EventMessage): Promise<void> {
-    if (message.type === EventMessageType.Dispatch) {
-      const { data } = message.payload;
-      const handlerId = data.handlerId;
+  private async handleEvent(eventData: EventData): Promise<void> {
+    const { handlerId } = eventData;
 
-      // 查找并执行处理器
-      const handler = this.listeners.get(handlerId);
-      if (handler) {
-        try {
-          await handler(data);
-          this.sendEventResult(handlerId, true);
-        } catch (error) {
-          this.sendEventResult(handlerId, false, error.message);
-        }
+    // 查找并执行处理器
+    const handler = this.listeners.get(handlerId);
+    if (handler) {
+      try {
+        await handler(eventData['data']);
+        this.sendEventResult(handlerId, true);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.sendEventResult(handlerId, false, errorMessage);
       }
     }
   }
 
   // 发送事件结果
   private sendEventResult(handlerId: string, success: boolean, error?: string): void {
-    const message = createMessage(EventMessageType.Result, {
-      handlerId,
-      success,
-      error,
-    });
+    const message = {
+      type: EventMessageType.Result,
+      id: generateId(),
+      timestamp: Date.now(),
+      payload: {
+        handlerId,
+        success,
+        error,
+      },
+    };
     self.postMessage(message);
   }
 
   // 注册事件处理器
-  on(eventType: string, handler: Function): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  on(eventType: string, handler: (...args: any[]) => any): void {
     const handlerId = `${eventType}-${Date.now()}`;
     this.listeners.set(handlerId, handler);
 
     // 通知 Host 注册
-    const message = createMessage(EventMessageType.Register, {
-      nodeId: '', // 会在组件挂载时设置
-      eventType: eventType as any,
-      handlerId,
-    });
+    const message = {
+      type: EventMessageType.Register,
+      id: generateId(),
+      timestamp: Date.now(),
+      payload: {
+        nodeId: '', // 会在组件挂载时设置
+        eventType,
+        handlerId,
+      },
+    };
     self.postMessage(message);
   }
 
@@ -107,7 +120,12 @@ export class AegisWorkerRuntime {
 
   // 发送 UI 更新
   sendUIUpdate(type: UIMessageType, payload: any): void {
-    const message = createMessage(type, payload);
+    const message = {
+      type,
+      id: generateId(),
+      timestamp: Date.now(),
+      payload,
+    };
     self.postMessage(message);
   }
 

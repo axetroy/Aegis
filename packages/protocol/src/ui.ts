@@ -161,16 +161,23 @@ export type UIMessage =
   | ErrorMessage;
 
 // 消息创建辅助函数
-export function createMessage<T extends UIMessage>(
+export interface BaseMessagePayload {
+  type: string;
+  id: string;
+  timestamp: number;
+  payload: any;
+}
+
+export function createMessage<T extends BaseMessagePayload>(
   type: T['type'],
-  payload: T['payload']
+  payload: T['payload'],
 ): T {
   return {
     type,
     id: generateId(),
     timestamp: Date.now(),
     payload,
-  } as T;
+  } as unknown as T;
 }
 
 // 生成唯一 ID

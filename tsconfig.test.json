@@ -1,15 +1,21 @@
 {
-  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    // 测试文件不需要生成声明文件
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
     "declaration": false,
     "declarationMap": false,
-    "outDir": "./dist-test",
-
-    // 测试文件可以使用 any
-    "noUncheckedIndexedAccess": false,
-
-    // 包含 vitest 类型
+    "sourceMap": false,
+    "customConditions": ["source"],
     "types": ["vitest/globals", "node"]
   },
   "include": [
@@ -19,7 +25,8 @@
     "**/*.spec.tsx",
     "**/tests/**/*.ts",
     "**/tests/**/*.tsx",
-    "**/vitest.config.ts"
+    "vitest.config.ts",
+    "vitest.setup.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

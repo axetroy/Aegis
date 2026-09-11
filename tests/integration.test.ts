@@ -4,28 +4,29 @@
  * 验证从 Worker 到 Renderer 的完整数据流
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   NodeType,
   UIMessageType,
   EventMessageType,
   createMessage,
   generateId,
-  type UIMessage,
-  type EventMessage,
+  type NodeProps,
 } from '@aegis/protocol';
 
 // Mock 环境
 describe('Aegis Integration Tests', () => {
   describe('UI Protocol Flow', () => {
     it('should create node and receive response', () => {
-      // 模拟 Worker 发送创建节点消息
-      const createNodeMsg = createMessage(UIMessageType.CreateNode, {
-        id: 'node-1',
-        type: NodeType.View,
-        props: { style: { display: 'flex' } },
-        children: [],
-      });
+      const createNodeMsg = createMessage<{ type: string; id: string; timestamp: number; payload: NodeProps }>(
+        UIMessageType.CreateNode,
+        {
+          id: 'node-1',
+          type: NodeType.View,
+          props: { style: { display: 'flex' } },
+          children: [],
+        },
+      );
 
       expect(createNodeMsg.type).toBe(UIMessageType.CreateNode);
       expect(createNodeMsg.payload.id).toBe('node-1');
@@ -33,7 +34,12 @@ describe('Aegis Integration Tests', () => {
     });
 
     it('should update node and receive response', () => {
-      const updateNodeMsg = createMessage(UIMessageType.UpdateNode, {
+      const updateNodeMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { id: string; props: Record<string, any> };
+      }>(UIMessageType.UpdateNode, {
         id: 'node-1',
         props: { style: { color: 'red' } },
       });
@@ -43,7 +49,12 @@ describe('Aegis Integration Tests', () => {
     });
 
     it('should delete node and receive response', () => {
-      const deleteNodeMsg = createMessage(UIMessageType.DeleteNode, {
+      const deleteNodeMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { id: string };
+      }>(UIMessageType.DeleteNode, {
         id: 'node-1',
       });
 
@@ -52,7 +63,12 @@ describe('Aegis Integration Tests', () => {
     });
 
     it('should sync complete tree', () => {
-      const syncTreeMsg = createMessage(UIMessageType.SyncTree, {
+      const syncTreeMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { root: NodeProps; nodes: Record<string, NodeProps> };
+      }>(UIMessageType.SyncTree, {
         root: {
           id: 'root',
           type: NodeType.View,
@@ -84,7 +100,12 @@ describe('Aegis Integration Tests', () => {
 
   describe('Event Protocol Flow', () => {
     it('should register event handler', () => {
-      const registerMsg = createMessage(EventMessageType.Register, {
+      const registerMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { nodeId: string; eventType: string; handlerId: string };
+      }>(EventMessageType.Register, {
         nodeId: 'button-1',
         eventType: 'click',
         handlerId: 'handler-1',
@@ -96,7 +117,18 @@ describe('Aegis Integration Tests', () => {
     });
 
     it('should dispatch event and receive result', () => {
-      const dispatchMsg = createMessage(EventMessageType.Dispatch, {
+      const dispatchMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: {
+          type: string;
+          nodeId: string;
+          handlerId: string;
+          timestamp: number;
+          data: Record<string, any>;
+        };
+      }>(EventMessageType.Dispatch, {
         type: 'click',
         nodeId: 'button-1',
         handlerId: 'handler-1',
@@ -110,7 +142,12 @@ describe('Aegis Integration Tests', () => {
     });
 
     it('should batch dispatch multiple events', () => {
-      const batchMsg = createMessage(EventMessageType.BatchDispatch, {
+      const batchMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { events: any[] };
+      }>(EventMessageType.BatchDispatch, {
         events: [
           {
             type: 'click',
@@ -133,7 +170,12 @@ describe('Aegis Integration Tests', () => {
     });
 
     it('should send event result', () => {
-      const resultMsg = createMessage(EventMessageType.Result, {
+      const resultMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { handlerId: string; success: boolean; error?: string };
+      }>(EventMessageType.Result, {
         handlerId: 'handler-1',
         success: true,
       });
@@ -143,7 +185,12 @@ describe('Aegis Integration Tests', () => {
     });
 
     it('should send event result with error', () => {
-      const resultMsg = createMessage(EventMessageType.Result, {
+      const resultMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { handlerId: string; success: boolean; error?: string };
+      }>(EventMessageType.Result, {
         handlerId: 'handler-1',
         success: false,
         error: 'Handler not found',
@@ -157,7 +204,7 @@ describe('Aegis Integration Tests', () => {
 
   describe('Counter App Simulation', () => {
     let state: { count: number };
-    let uiUpdates: UIMessage[];
+    let uiUpdates: any[];
 
     beforeEach(() => {
       state = { count: 0 };
@@ -165,8 +212,12 @@ describe('Aegis Integration Tests', () => {
     });
 
     it('should simulate counter increment', () => {
-      // 模拟初始状态
-      const initialSync = createMessage(UIMessageType.SyncTree, {
+      const initialSync = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { root: NodeProps; nodes: Record<string, NodeProps> };
+      }>(UIMessageType.SyncTree, {
         root: {
           id: 'counter-root',
           type: NodeType.View,
@@ -189,21 +240,22 @@ describe('Aegis Integration Tests', () => {
         },
       });
 
-      // 验证初始树结构
-      expect(initialSync.payload.nodes['count-display'].props.value).toBe('0');
+      expect(initialSync.payload.nodes['count-display'].props['value']).toBe('0');
 
-      // 模拟点击增加按钮
       state.count++;
 
-      // 模拟 UI 更新
-      const updateMsg = createMessage(UIMessageType.UpdateNode, {
+      const updateMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { id: string; props: { value: string } };
+      }>(UIMessageType.UpdateNode, {
         id: 'count-display',
         props: { value: state.count.toString() },
       });
 
       uiUpdates.push(updateMsg);
 
-      // 验证更新
       expect(updateMsg.payload.props.value).toBe('1');
       expect(state.count).toBe(1);
     });
@@ -211,10 +263,14 @@ describe('Aegis Integration Tests', () => {
     it('should simulate counter decrement', () => {
       state.count = 5;
 
-      // 模拟点击减少按钮
       state.count--;
 
-      const updateMsg = createMessage(UIMessageType.UpdateNode, {
+      const updateMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { id: string; props: { value: string } };
+      }>(UIMessageType.UpdateNode, {
         id: 'count-display',
         props: { value: state.count.toString() },
       });
@@ -226,10 +282,14 @@ describe('Aegis Integration Tests', () => {
     it('should simulate counter reset', () => {
       state.count = 10;
 
-      // 模拟点击重置按钮
       state.count = 0;
 
-      const updateMsg = createMessage(UIMessageType.UpdateNode, {
+      const updateMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { id: string; props: { value: string } };
+      }>(UIMessageType.UpdateNode, {
         id: 'count-display',
         props: { value: state.count.toString() },
       });
@@ -241,22 +301,30 @@ describe('Aegis Integration Tests', () => {
 
   describe('Node Isolation', () => {
     it('should keep app namespaces separate', () => {
-      // 模拟两个应用
-      const app1Root = createMessage(UIMessageType.CreateNode, {
+      const app1Root = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: NodeProps;
+      }>(UIMessageType.CreateNode, {
         id: 'app1-root',
         type: NodeType.View,
         props: { 'data-app': 'app1' },
         children: [],
       });
 
-      const app2Root = createMessage(UIMessageType.CreateNode, {
+      const app2Root = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: NodeProps;
+      }>(UIMessageType.CreateNode, {
         id: 'app2-root',
         type: NodeType.View,
         props: { 'data-app': 'app2' },
         children: [],
       });
 
-      // 验证 ID 不会冲突
       expect(app1Root.payload.id).not.toBe(app2Root.payload.id);
       expect(app1Root.payload.props['data-app']).toBe('app1');
       expect(app2Root.payload.props['data-app']).toBe('app2');
@@ -269,14 +337,18 @@ describe('Aegis Integration Tests', () => {
         ids.add(generateId());
       }
 
-      // 100 个 ID 应该都是唯一的
       expect(ids.size).toBe(100);
     });
   });
 
   describe('Message Validation', () => {
     it('should have valid message structure', () => {
-      const msg = createMessage(UIMessageType.CreateNode, {
+      const msg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: NodeProps;
+      }>(UIMessageType.CreateNode, {
         id: 'test',
         type: NodeType.View,
         props: {},
@@ -296,7 +368,12 @@ describe('Aegis Integration Tests', () => {
 
     it('should have valid timestamp', () => {
       const before = Date.now();
-      const msg = createMessage(UIMessageType.UpdateNode, { id: 'test', props: {} });
+      const msg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { id: string; props: Record<string, any> };
+      }>(UIMessageType.UpdateNode, { id: 'test', props: {} });
       const after = Date.now();
 
       expect(msg.timestamp).toBeGreaterThanOrEqual(before);
@@ -308,15 +385,20 @@ describe('Aegis Integration Tests', () => {
     it('should handle rapid message creation', () => {
       const start = performance.now();
 
-      const messages: UIMessage[] = [];
+      const messages = [];
       for (let i = 0; i < 1000; i++) {
         messages.push(
-          createMessage(UIMessageType.CreateNode, {
+          createMessage<{
+            type: string;
+            id: string;
+            timestamp: number;
+            payload: NodeProps;
+          }>(UIMessageType.CreateNode, {
             id: `node-${i}`,
             type: NodeType.View,
             props: {},
             children: [],
-          })
+          }),
         );
       }
 
@@ -324,7 +406,7 @@ describe('Aegis Integration Tests', () => {
       const duration = end - start;
 
       expect(messages).toHaveLength(1000);
-      expect(duration).toBeLessThan(1000); // 应该在 1 秒内完成
+      expect(duration).toBeLessThan(1000);
     });
 
     it('should handle rapid ID generation', () => {

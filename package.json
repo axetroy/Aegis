@@ -16,14 +16,24 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "typecheck": "tsc --noEmit",
+    "typecheck:packages": "pnpm --filter './packages/*' run typecheck",
+    "typecheck:apps": "pnpm --filter './apps/*' run typecheck",
+    "typecheck:all": "pnpm typecheck:packages && pnpm typecheck:apps",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "clean": "pnpm -r clean"
   },
   "devDependencies": {
+    "@aegis/protocol": "workspace:*",
+    "@aegis/ui": "workspace:*",
+    "@aegis/react": "workspace:*",
+    "@aegis/renderer": "workspace:*",
+    "@aegis/runtime": "workspace:*",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
+    "@types/node": "^22.20.2",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.45.0",
@@ -32,6 +42,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "jsdom": "^22.0.0",
     "prettier": "^3.0.0",
+    "tsx": "^4.23.13",
     "typescript": "^5.1.0",
     "vitest": "^0.34.0"
   }

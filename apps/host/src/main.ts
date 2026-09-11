@@ -4,8 +4,143 @@
  * 安全运行时环境
  */
 
-import { createRenderer, RendererConfig } from '@aegis/renderer';
-import { UIMessageType, createMessage } from '@aegis/protocol';
+// 渲染器配置
+interface RendererConfig {
+  container: HTMLElement;
+  appId: string;
+}
+
+// 简化的渲染器创建函数
+function createRenderer(config: RendererConfig) {
+  const { container, appId } = config;
+
+  // 创建根元素
+  const root = document.createElement('div');
+  root.id = `aegis-root-${appId}`;
+  root.setAttribute('data-aegis-app', appId);
+  root.style.cssText = 'display: flex; flex-direction: column; width: 100%; height: 100%;';
+  container.appendChild(root);
+
+  // 消息处理器
+  const handleMessage = (event: MessageEvent) => {
+    const { type, payload } = event.data || {};
+
+    switch (type) {
+      case 'ui:sync-tree':
+        syncTree(payload);
+        break;
+      case 'ui:update-node':
+        updateNode(payload);
+        break;
+      case 'ui:create-node':
+        createNode(payload);
+        break;
+      case 'ui:delete-node':
+        deleteNode(payload);
+        break;
+    }
+  };
+
+  // 节点存储
+  const nodes = new Map<string, HTMLElement>();
+
+  // 同步树
+  const syncTree = (payload: { root: any; nodes: Record<string, any> }) => {
+    root.innerHTML = '';
+    nodes.clear();
+
+    const { root: rootNode, nodes: nodeMap } = payload;
+
+    // 创建根节点
+    const rootElement = createDOMElement(rootNode);
+    root.appendChild(rootElement);
+    nodes.set(rootNode.id, rootElement);
+
+    // 创建子节点
+    if (rootNode.children) {
+      rootNode.children.forEach((childId: string) => {
+        const childProps = nodeMap[childId];
+        if (childProps) {
+          const childElement = createDOMElement(childProps);
+          rootElement.appendChild(childElement);
+          nodes.set(childId, childElement);
+        }
+      });
+    }
+  };
+
+  // 创建 DOM 元素
+  const createDOMElement = (props: { id: string; type: string; props: any }): HTMLElement => {
+    let element: HTMLElement;
+
+    switch (props.type) {
+      case 'view':
+        element = document.createElement('div');
+        break;
+      case 'text':
+        element = document.createElement('span');
+        element.textContent = props.props?.value || '';
+        break;
+      case 'button':
+        element = document.createElement('button');
+        element.textContent = props.props?.children || '';
+        break;
+      case 'input':
+        element = document.createElement('input');
+        (element as HTMLInputElement).value = props.props?.value || '';
+        break;
+      default:
+        element = document.createElement('div');
+    }
+
+    // 应用样式
+    const style = props.props?.style || {};
+    Object.entries(style).forEach(([key, value]) => {
+      if (key === 'gap') {
+        element.style.gap = `${value}px`;
+      } else {
+        (element.style as any)[key] = typeof value === 'number' ? `${value}px` : value;
+      }
+    });
+
+    return element;
+  };
+
+  // 更新节点
+  const updateNode = (payload: { id: string; props: any }) => {
+    const element = nodes.get(payload.id);
+    if (element) {
+      if (payload.props?.value !== undefined) {
+        element.textContent = payload.props.value;
+      }
+    }
+  };
+
+  // 创建节点
+  const createNode = (payload: any) => {
+    console.log('[Host] Create node:', payload);
+  };
+
+  // 删除节点
+  const deleteNode = (payload: { id: string }) => {
+    const element = nodes.get(payload.id);
+    if (element) {
+      element.remove();
+      nodes.delete(payload.id);
+    }
+  };
+
+  // 监听消息
+  window.addEventListener('message', handleMessage);
+
+  return {
+    destroy: () => {
+      window.removeEventListener('message', handleMessage);
+      container.innerHTML = '';
+      nodes.clear();
+    },
+  };
+}
 
 // 初始化宿主环境
 function initHost() {
@@ -28,7 +163,7 @@ function initHost() {
   console.log('[Aegis Host] 渲染器已创建');
 
   // 创建 Worker
-  const worker = new Worker('/src/app-worker.ts', { type: 'module' });
+  const worker = new Worker(new URL('./app-worker.ts', import.meta.url), { type: 'module' });
 
   // 设置消息转发
   worker.onmessage = (event) => {
@@ -36,14 +171,6 @@ function initHost() {
     // 转发消息到渲染器
     window.postMessage(event.data);
   };
-
-  // 监听来自渲染器的消息
-  window.addEventListener('message', (event) => {
-    if (event.data && event.data.type) {
-      // 转发消息到 Worker
-      worker.postMessage(event.data);
-    }
-  });
 
   // 初始化 Worker
   worker.postMessage({

@@ -15,7 +15,7 @@ export const Text: React.FC<TextProps> = ({
 }) => {
   const textStyle: React.CSSProperties = {
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: '24px',
     color: '#000000',
     ...style,
   };
@@ -23,8 +23,8 @@ export const Text: React.FC<TextProps> = ({
   // 处理 numberOfLines
   if (numberOfLines !== undefined) {
     textStyle.display = '-webkit-box';
-    textStyle.webkitLineClamp = numberOfLines;
-    textStyle.webkitBoxOrient = 'vertical';
+    textStyle.WebkitLineClamp = numberOfLines;
+    textStyle.WebkitBoxOrient = 'vertical';
     textStyle.overflow = 'hidden';
   }
 

@@ -5,14 +5,11 @@
  */
 
 import {
-  UIMessage,
   UIMessageType,
-  EventMessage,
   EventMessageType,
-  NodeProps,
-  NodeType,
+  type NodeProps,
+  type NodeType,
   generateId,
-  createMessage,
 } from '@aegis/protocol';
 
 // 节点映射
@@ -61,7 +58,6 @@ export class AegisDOMRenderer {
   // 设置消息处理
   private setupMessageHandler(): void {
     // 监听来自 Worker 的消息
-    // 这里假设消息通过 postMessage 传递
     window.addEventListener('message', (event) => {
       if (event.data && event.data.type) {
         this.handleMessage(event.data);
@@ -69,8 +65,8 @@ export class AegisDOMRenderer {
     });
   }
 
-  // 处理消息
-  private handleMessage(message: UIMessage): void {
+  // 处理消息（公开方法用于测试）
+  public handleMessage(message: { type: string; payload: any }): void {
     switch (message.type) {
       case UIMessageType.CreateNode:
         this.createNode(message.payload);
@@ -94,11 +90,14 @@ export class AegisDOMRenderer {
   }
 
   // 创建节点
-  private createNode(payload: NodeProps): void {
-    const { id, type, props, children } = payload;
+  private createNode(payload: NodeProps & { parentId?: string }): void {
+    const { id, type, props, children, parentId } = payload;
 
     // 创建 DOM 元素
     const dom = this.createElement(type, props);
+
+    // 设置 id 属性
+    dom.id = id;
 
     // 注册节点
     this.nodes[id] = { dom, props };
@@ -107,8 +106,8 @@ export class AegisDOMRenderer {
     this.addEventListeners(id, dom, props);
 
     // 查找父节点
-    const parentId = props.parentId || this.rootId;
-    const parent = this.nodes[parentId];
+    const targetParentId = parentId || this.rootId;
+    const parent = this.nodes[targetParentId];
 
     if (parent) {
       parent.dom.appendChild(dom);
@@ -116,7 +115,7 @@ export class AegisDOMRenderer {
 
     // 处理子节点
     if (children && children.length > 0) {
-      children.forEach((childId) => {
+      children.forEach((_childId) => {
         // 子节点会在后续消息中创建
       });
     }
@@ -130,23 +129,23 @@ export class AegisDOMRenderer {
     let element: HTMLElement;
 
     switch (type) {
-      case NodeType.View:
+      case 'view':
         element = document.createElement('div');
         break;
-      case NodeType.Text:
+      case 'text':
         element = document.createElement('span');
-        element.textContent = props.value || '';
+        element.textContent = props['value'] || '';
         break;
-      case NodeType.Button:
+      case 'button':
         element = document.createElement('button');
-        element.textContent = props.children || '';
+        element.textContent = props['children'] || '';
         break;
-      case NodeType.Input:
+      case 'input':
         element = document.createElement('input');
-        (element as HTMLInputElement).value = props.value || '';
-        (element as HTMLInputElement).placeholder = props.placeholder || '';
+        (element as HTMLInputElement).value = props['value'] || '';
+        (element as HTMLInputElement).placeholder = props['placeholder'] || '';
         break;
-      case NodeType.ScrollView:
+      case 'scroll-view':
         element = document.createElement('div');
         element.style.overflow = 'auto';
         break;
@@ -162,28 +161,30 @@ export class AegisDOMRenderer {
 
   // 应用样式
   private applyStyles(element: HTMLElement, props: Record<string, any>): void {
-    const style = props.style || {};
+    const style = (props['style'] as Record<string, any>) || {};
 
-    if (style.display) element.style.display = style.display;
-    if (style.flexDirection) element.style.flexDirection = style.flexDirection;
-    if (style.justifyContent) element.style.justifyContent = style.justifyContent;
-    if (style.alignItems) element.style.alignItems = style.alignItems;
-    if (style.width) element.style.width = typeof style.width === 'number' ? `${style.width}px` : style.width;
-    if (style.height) element.style.height = typeof style.height === 'number' ? `${style.height}px` : style.height;
-    if (style.padding) element.style.padding = `${style.padding}px`;
-    if (style.margin) element.style.margin = `${style.margin}px`;
-    if (style.backgroundColor) element.style.backgroundColor = style.backgroundColor;
-    if (style.borderRadius) element.style.borderRadius = `${style.borderRadius}px`;
-    if (style.opacity) element.style.opacity = style.opacity.toString();
-    if (style.fontSize) element.style.fontSize = `${style.fontSize}px`;
-    if (style.color) element.style.color = style.color;
-    if (style.textAlign) element.style.textAlign = style.textAlign;
+    if (style['display']) element.style.display = style['display'];
+    if (style['flexDirection']) element.style.flexDirection = style['flexDirection'];
+    if (style['justifyContent']) element.style.justifyContent = style['justifyContent'];
+    if (style['alignItems']) element.style.alignItems = style['alignItems'];
+    if (style['width'])
+      element.style.width = typeof style['width'] === 'number' ? `${style['width']}px` : style['width'];
+    if (style['height'])
+      element.style.height = typeof style['height'] === 'number' ? `${style['height']}px` : style['height'];
+    if (style['padding']) element.style.padding = `${style['padding']}px`;
+    if (style['margin']) element.style.margin = `${style['margin']}px`;
+    if (style['backgroundColor']) element.style.backgroundColor = style['backgroundColor'];
+    if (style['borderRadius']) element.style.borderRadius = `${style['borderRadius']}px`;
+    if (style['opacity']) element.style.opacity = style['opacity'].toString();
+    if (style['fontSize']) element.style.fontSize = `${style['fontSize']}px`;
+    if (style['color']) element.style.color = style['color'];
+    if (style['textAlign']) element.style.textAlign = style['textAlign'];
   }
 
   // 添加事件监听
   private addEventListeners(nodeId: string, element: HTMLElement, props: Record<string, any>): void {
     // 点击事件
-    if (props.onClick) {
+    if (props['onClick']) {
       const handler = (event: Event) => {
         event.preventDefault();
         this.sendEvent(nodeId, 'click', { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY });
@@ -193,7 +194,7 @@ export class AegisDOMRenderer {
     }
 
     // 输入事件
-    if (props.onChangeText) {
+    if (props['onChangeText']) {
       const handler = (event: Event) => {
         const value = (event.target as HTMLInputElement).value;
         this.sendEvent(nodeId, 'input', { value });
@@ -205,13 +206,18 @@ export class AegisDOMRenderer {
 
   // 发送事件到 Worker
   private sendEvent(nodeId: string, eventType: string, data: Record<string, any>): void {
-    const message = createMessage(EventMessageType.Dispatch, {
-      type: eventType as any,
-      nodeId,
-      handlerId: `${nodeId}-${eventType}`,
+    const message = {
+      type: EventMessageType.Dispatch,
+      id: generateId(),
       timestamp: Date.now(),
-      data,
-    });
+      payload: {
+        type: eventType,
+        nodeId,
+        handlerId: `${nodeId}-${eventType}`,
+        timestamp: Date.now(),
+        data,
+      },
+    };
 
     // 发送到 Worker
     window.postMessage(message);
@@ -229,8 +235,8 @@ export class AegisDOMRenderer {
       this.applyStyles(node.dom, node.props);
 
       // 更新文本内容
-      if (props.value !== undefined) {
-        node.dom.textContent = props.value;
+      if (props['value'] !== undefined) {
+        node.dom.textContent = props['value'];
       }
 
       this.sendResponse(UIMessageType.NodeUpdated, id, true);
@@ -259,9 +265,8 @@ export class AegisDOMRenderer {
 
   // 移除事件监听
   private removeEventListeners(nodeId: string): void {
-    this.eventHandlers.forEach((handler, key) => {
+    this.eventHandlers.forEach((_handler, key) => {
       if (key.startsWith(nodeId)) {
-        // 这里需要知道元素引用才能移除
         this.eventHandlers.delete(key);
       }
     });
@@ -269,7 +274,7 @@ export class AegisDOMRenderer {
 
   // 插入节点
   private insertNode(payload: { parentId: string; node: NodeProps; index: number }): void {
-    const { parentId, node, index } = payload;
+    const { parentId, node } = payload;
     const parent = this.nodes[parentId];
 
     if (parent) {
@@ -280,7 +285,7 @@ export class AegisDOMRenderer {
 
   // 移动节点
   private moveNode(payload: { nodeId: string; newParentId: string; index: number }): void {
-    const { nodeId, newParentId, index } = payload;
+    const { nodeId, newParentId } = payload;
     const node = this.nodes[nodeId];
     const newParent = this.nodes[newParentId];
 
@@ -297,11 +302,37 @@ export class AegisDOMRenderer {
     this.config.container.innerHTML = '';
     this.nodes = {};
 
-    // 重新创建根节点
-    this.createRoot();
+    // 创建根容器
+    const rootContainer = document.createElement('div');
+    rootContainer.id = this.rootId;
+    rootContainer.setAttribute('data-aegis-app', this.config.appId);
+    rootContainer.style.cssText = 'display: flex; flex-direction: column; width: 100%; height: 100%;';
+    this.config.container.appendChild(rootContainer);
 
-    // 递归创建节点
-    this.createNodeFromTree(root, nodes);
+    // 注册根容器
+    this.nodes[this.rootId] = {
+      dom: rootContainer,
+      props: {},
+    };
+
+    // 创建根节点并直接添加到容器
+    const rootDom = this.createElement(root.type, root.props);
+    rootDom.id = root.id;
+    this.nodes[root.id] = { dom: rootDom, props: root.props };
+    rootContainer.appendChild(rootDom);
+
+    // 递归创建子节点并添加到根节点
+    if (root.children) {
+      root.children.forEach((childId) => {
+        const childProps = nodes[childId];
+        if (childProps) {
+          const childDom = this.createElement(childProps.type, childProps.props);
+          childDom.id = childId;
+          this.nodes[childId] = { dom: childDom, props: childProps.props };
+          rootDom.appendChild(childDom);
+        }
+      });
+    }
   }
 
   // 从树创建节点
@@ -324,14 +355,19 @@ export class AegisDOMRenderer {
       type === UIMessageType.CreateNode
         ? UIMessageType.NodeCreated
         : type === UIMessageType.UpdateNode
-        ? UIMessageType.NodeUpdated
-        : UIMessageType.NodeDeleted;
+          ? UIMessageType.NodeUpdated
+          : UIMessageType.NodeDeleted;
 
-    const message = createMessage(responseType, {
-      id: nodeId,
-      success,
-      error,
-    });
+    const message = {
+      type: responseType,
+      id: generateId(),
+      timestamp: Date.now(),
+      payload: {
+        id: nodeId,
+        success,
+        error,
+      },
+    };
 
     window.postMessage(message);
   }

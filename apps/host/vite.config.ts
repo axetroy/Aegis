@@ -10,9 +10,6 @@ export default defineConfig({
     sourcemap: true,
   },
   resolve: {
-    alias: {
-      '@aegis/protocol': '@aegis/protocol/src',
-      '@aegis/renderer': '@aegis/renderer/src',
-    },
+    conditions: ['source'],
   },
 });

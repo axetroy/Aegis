@@ -59,8 +59,15 @@ module.exports = {
     // 测试文件配置
     {
       files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx', '**/tests/**/*.ts'],
-      env: {
-        vitest: true,
+      globals: {
+        vi: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
       },
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',

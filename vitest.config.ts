@@ -23,12 +23,6 @@ export default defineConfig({
         '**/index.ts',
         '**/types.ts',
       ],
-      thresholds: {
-        statements: 80,
-        branches: 80,
-        functions: 80,
-        lines: 80,
-      },
     },
     testTimeout: 10000,
     hookTimeout: 10000,

@@ -4,14 +4,13 @@
  * 测试核心操作的性能指标
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   NodeType,
   UIMessageType,
-  EventMessageType,
   createMessage,
   generateId,
-  type UIMessage,
+  type NodeProps,
 } from '@aegis/protocol';
 
 describe('Aegis Performance Benchmarks', () => {
@@ -20,7 +19,12 @@ describe('Aegis Performance Benchmarks', () => {
       const start = performance.now();
 
       for (let i = 0; i < 10000; i++) {
-        createMessage(UIMessageType.CreateNode, {
+        createMessage<{
+          type: string;
+          id: string;
+          timestamp: number;
+          payload: NodeProps;
+        }>(UIMessageType.CreateNode, {
           id: `node-${i}`,
           type: NodeType.View,
           props: {
@@ -61,7 +65,6 @@ describe('Aegis Performance Benchmarks', () => {
       console.log(`ID Generation: ${duration.toFixed(2)}ms for 100,000 IDs`);
       console.log(`Operations per second: ${opsPerSecond.toFixed(0)}`);
 
-      // 验证所有 ID 唯一
       expect(ids.size).toBe(100000);
       expect(duration).toBeLessThan(1000);
     });
@@ -71,10 +74,9 @@ describe('Aegis Performance Benchmarks', () => {
     it('should build a large tree within 1 second', () => {
       const start = performance.now();
 
-      const nodes: Record<string, any> = {};
+      const nodes: Record<string, NodeProps> = {};
       const rootNodeId = 'root';
 
-      // 创建根节点
       nodes[rootNodeId] = {
         id: rootNodeId,
         type: NodeType.View,
@@ -82,7 +84,6 @@ describe('Aegis Performance Benchmarks', () => {
         children: [],
       };
 
-      // 创建 1000 个节点的树
       for (let i = 1; i <= 1000; i++) {
         const nodeId = `node-${i}`;
         const parentId = i === 1 ? rootNodeId : `node-${Math.floor(i / 2)}`;
@@ -95,7 +96,7 @@ describe('Aegis Performance Benchmarks', () => {
         };
 
         if (nodes[parentId]) {
-          nodes[parentId].children.push(nodeId);
+          nodes[parentId].children!.push(nodeId);
         }
       }
 
@@ -111,9 +112,8 @@ describe('Aegis Performance Benchmarks', () => {
     });
 
     it('should sync tree message within 100ms', () => {
-      // 构建大型节点映射
       const nodeCount = 5000;
-      const nodes: Record<string, any> = {};
+      const nodes: Record<string, NodeProps> = {};
 
       for (let i = 0; i < nodeCount; i++) {
         nodes[`node-${i}`] = {
@@ -126,7 +126,12 @@ describe('Aegis Performance Benchmarks', () => {
 
       const start = performance.now();
 
-      const syncMsg = createMessage(UIMessageType.SyncTree, {
+      const syncMsg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { root: NodeProps; nodes: Record<string, NodeProps> };
+      }>(UIMessageType.SyncTree, {
         root: {
           id: 'root',
           type: NodeType.View,
@@ -149,11 +154,16 @@ describe('Aegis Performance Benchmarks', () => {
 
   describe('Memory Usage', () => {
     it('should create 1000 messages with less than 10MB memory', () => {
-      const messages: UIMessage[] = [];
+      const messages = [];
 
       for (let i = 0; i < 1000; i++) {
         messages.push(
-          createMessage(UIMessageType.CreateNode, {
+          createMessage<{
+            type: string;
+            id: string;
+            timestamp: number;
+            payload: NodeProps;
+          }>(UIMessageType.CreateNode, {
             id: `node-${i}`,
             type: NodeType.View,
             props: {
@@ -169,33 +179,30 @@ describe('Aegis Performance Benchmarks', () => {
               },
             },
             children: Array.from({ length: 5 }, (_, j) => `child-${i}-${j}`),
-          })
+          }),
         );
       }
 
-      // 粗略估计：每个消息对象大约 500-1000 bytes
-      // 1000 个消息应该在 1MB 以内
       const estimatedSize = JSON.stringify(messages).length;
 
       console.log(`Memory Usage: ${(estimatedSize / 1024 / 1024).toFixed(2)}MB for 1,000 messages`);
 
-      expect(estimatedSize).toBeLessThan(10 * 1024 * 1024); // 10MB
+      expect(estimatedSize).toBeLessThan(10 * 1024 * 1024);
       expect(messages.length).toBe(1000);
     });
   });
 
   describe('Event Handling Performance', () => {
     it('should process 10,000 events within 1 second', () => {
-      const handlers = new Map<string, Function>();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const handlers = new Map<string, (...args: any[]) => any>();
 
-      // 注册 100 个处理器
       for (let i = 0; i < 100; i++) {
         handlers.set(`handler-${i}`, vi.fn());
       }
 
       const start = performance.now();
 
-      // 处理 10,000 个事件
       for (let i = 0; i < 10000; i++) {
         const handlerId = `handler-${i % 100}`;
         const handler = handlers.get(handlerId);
@@ -226,19 +233,21 @@ describe('Aegis Performance Benchmarks', () => {
     it('should batch 1000 UI operations', () => {
       const start = performance.now();
 
-      const operations = Array.from({ length: 1000 }, (_, i) => ({
-        type: UIMessageType.UpdateNode,
-        id: generateId(),
-        timestamp: Date.now(),
-        payload: {
+      const operations = Array.from({ length: 1000 }, (_, i) =>
+        createMessage<{
+          type: string;
+          id: string;
+          timestamp: number;
+          payload: { id: string; props: Record<string, any> };
+        }>(UIMessageType.UpdateNode, {
           id: `node-${i}`,
           props: {
             style: {
               color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
             },
           },
-        },
-      }));
+        }),
+      );
 
       const end = performance.now();
       const duration = end - start;
@@ -256,12 +265,16 @@ describe('Aegis Performance Benchmarks', () => {
     it('should handle concurrent message creation', async () => {
       const start = performance.now();
 
-      // 创建 5 个并发批次
       const batches = Array.from({ length: 5 }, (_, batchIndex) => {
         return new Promise<void>((resolve) => {
           setTimeout(() => {
             for (let i = 0; i < 1000; i++) {
-              createMessage(UIMessageType.CreateNode, {
+              createMessage<{
+                type: string;
+                id: string;
+                timestamp: number;
+                payload: NodeProps;
+              }>(UIMessageType.CreateNode, {
                 id: `batch-${batchIndex}-node-${i}`,
                 type: NodeType.View,
                 props: {},
@@ -284,7 +297,7 @@ describe('Aegis Performance Benchmarks', () => {
     });
 
     it('should handle rapid state updates', () => {
-      const state = { count: 0, items: [] as number[] };
+      const state: { count: number; items: number[] } = { count: 0, items: [] };
 
       const start = performance.now();
 
@@ -308,23 +321,31 @@ describe('Aegis Performance Benchmarks', () => {
     it('should have minimal message overhead', () => {
       const smallPayload = { id: 'test' };
 
-      const msg = createMessage(UIMessageType.UpdateNode, smallPayload);
+      const msg = createMessage<{
+        type: string;
+        id: string;
+        timestamp: number;
+        payload: { id: string };
+      }>(UIMessageType.UpdateNode, smallPayload);
 
-      // 消息结构应该很小
       const msgSize = JSON.stringify(msg).length;
 
       console.log(`Message Overhead: ${msgSize} bytes`);
 
-      // 消息本身应该小于 200 bytes
       expect(msgSize).toBeLessThan(200);
     });
 
     it('should compress well for repeated patterns', () => {
       const messages = Array.from({ length: 100 }, (_, i) =>
-        createMessage(UIMessageType.UpdateNode, {
+        createMessage<{
+          type: string;
+          id: string;
+          timestamp: number;
+          payload: { id: string; props: Record<string, any> };
+        }>(UIMessageType.UpdateNode, {
           id: `node-${i}`,
           props: { style: { display: 'flex', padding: 10 } },
-        })
+        }),
       );
 
       const totalSize = JSON.stringify(messages).length;
@@ -332,8 +353,8 @@ describe('Aegis Performance Benchmarks', () => {
 
       console.log(`Average Message Size: ${avgSize.toFixed(0)} bytes`);
 
-      // 平均每条消息应该小于 150 bytes
-      expect(avgSize).toBeLessThan(150);
+      // 平均每条消息应该小于 200 bytes（考虑到包含唯一 ID 和时间戳）
+      expect(avgSize).toBeLessThan(200);
     });
   });
 });

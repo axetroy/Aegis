@@ -5,10 +5,15 @@
  */
 
 // 应用状态
-let state: Record<string, any> = {};
+interface AppState {
+  [key: string]: any;
+}
+
+let state: AppState = {};
 
 // 事件处理器
-const eventHandlers: Map<string, Function> = new Map();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const eventHandlers: Map<string, (...args: any[]) => any> = new Map();
 
 // 消息处理
 self.onmessage = (event) => {
@@ -154,23 +159,25 @@ function renderCounterApp() {
 
   // 注册事件处理器
   eventHandlers.set('handle-decrement', () => {
-    state.count--;
+    state['count'] = (state['count'] || 0) - 1;
     updateCountDisplay();
   });
 
   eventHandlers.set('handle-reset', () => {
-    state.count = 0;
+    state['count'] = 0;
     updateCountDisplay();
   });
 
   eventHandlers.set('handle-increment', () => {
-    state.count++;
+    state['count'] = (state['count'] || 0) + 1;
     updateCountDisplay();
   });
 }
 
 // 更新计数显示
 function updateCountDisplay() {
+  const count = state['count'] || 0;
+
   const updateMessage = {
     type: 'ui:update-node',
     id: generateId(),
@@ -178,7 +185,7 @@ function updateCountDisplay() {
     payload: {
       id: 'count-display',
       props: {
-        value: state.count.toString(),
+        value: count.toString(),
       },
     },
   };
@@ -192,7 +199,7 @@ function updateCountDisplay() {
     payload: {
       id: 'status-text',
       props: {
-        value: `当前计数: ${state.count}`,
+        value: `当前计数: ${count}`,
       },
     },
   };
@@ -201,7 +208,7 @@ function updateCountDisplay() {
 }
 
 // 处理事件
-function handleEvent(eventData: any) {
+function handleEvent(eventData: { handlerId: string; data?: any }): void {
   const { handlerId } = eventData;
   const handler = eventHandlers.get(handlerId);
 

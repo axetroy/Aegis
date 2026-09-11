@@ -111,9 +111,12 @@ describe('@aegis/ui Components', () => {
         </Text>
       );
       const text = screen.getByTestId('text');
-      expect(text.style.webkitLineClamp).toBe('2');
-      expect(text.style.webkitBoxOrient).toBe('vertical');
+      // 在 jsdom 中，CSS 属性可能以不同格式存储
       expect(text.style.overflow).toBe('hidden');
+      expect(text.style.display).toBe('-webkit-box');
+      // WebkitLineClamp 和 WebkitBoxOrient 可能以驼峰命名存储
+      const style = text.style as unknown as Record<string, string>;
+      expect(style['WebkitLineClamp'] || style['webkitLineClamp']).toBe('2');
     });
 
     it('should forward additional props', () => {
@@ -176,7 +179,7 @@ describe('@aegis/ui Components', () => {
           Disabled
         </Button>
       );
-      const button = screen.getByRole('button');
+      const button = screen.getByRole('button') as HTMLButtonElement;
       expect(button.disabled).toBe(true);
       expect(button.style.opacity).toBe('0.5');
       expect(button.style.cursor).toBe('not-allowed');

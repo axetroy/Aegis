@@ -75,18 +75,38 @@ export function finalizeInitialChildren(
   return true;
 }
 
+// 深度比较两个值
+function deepEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  if (typeof a !== typeof b) return false;
+  if (typeof a !== 'object') return a === b;
+
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) return false;
+
+  for (const key of keysA) {
+    if (!keysB.includes(key)) return false;
+    if (!deepEqual(a[key], b[key])) return false;
+  }
+
+  return true;
+}
+
 // 准备更新
 export function prepareUpdate(
   instance: any,
   type: string,
   oldProps: Record<string, any>,
-  newProps: Record<string, any>
+  newProps: Record<string, any>,
 ): null | Record<string, any> {
   const updatePayload: Record<string, any> = {};
 
   // 比较 props 变化
   for (const key in newProps) {
-    if (oldProps[key] !== newProps[key]) {
+    if (!deepEqual(oldProps[key], newProps[key])) {
       updatePayload[key] = newProps[key];
     }
   }

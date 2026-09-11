@@ -349,7 +349,7 @@ describe('@aegis/react/host-config', () => {
 
   describe('cancelTimeout', () => {
     it('should call clearTimeout', () => {
-      const timeoutId = setTimeout(() => {}, 100);
+      const timeoutId = window.setTimeout(() => {}, 100);
       cancelTimeout(timeoutId);
       // clearTimeout 不返回任何值，这里只验证函数被调用
     });
