@@ -16,7 +16,7 @@
     "declarationMap": false,
     "sourceMap": false,
     "customConditions": ["source"],
-    "types": ["vitest/globals", "node"]
+    "types": ["vitest/globals", "node", "@testing-library/jest-dom/vitest"]
   },
   "include": [
     "**/*.test.ts",
@@ -25,7 +25,7 @@
     "**/*.spec.tsx",
     "**/tests/**/*.ts",
     "**/tests/**/*.tsx",
-    "vitest.config.ts",
+    "vitest.config.mts",
     "vitest.setup.ts"
   ],
   "exclude": ["node_modules", "dist"]

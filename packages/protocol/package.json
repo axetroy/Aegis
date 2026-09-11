@@ -24,8 +24,7 @@
     "test:coverage": "vitest run --coverage",
     "clean": "rm -rf dist dist-test"
   },
-  "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.1.0"
+    "typescript": "^5.9.3"
   }
 }

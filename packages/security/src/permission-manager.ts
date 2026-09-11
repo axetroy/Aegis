@@ -229,3 +229,6 @@ export class PermissionManager {
     return descriptions[capability] ?? `访问 ${capability} 能力`;
   }
 }
+
+// Re-export types for convenience
+export type { PermissionManagerConfig, ResourceLimits } from './types';

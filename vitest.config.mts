@@ -29,13 +29,13 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@aegis/protocol': path.resolve(__dirname, 'packages/protocol/src'),
-      '@aegis/ui': path.resolve(__dirname, 'packages/ui/src'),
-      '@aegis/react': path.resolve(__dirname, 'packages/react/src'),
-      '@aegis/renderer': path.resolve(__dirname, 'packages/renderer/src'),
-      '@aegis/runtime': path.resolve(__dirname, 'packages/runtime/src'),
-      '@aegis/security': path.resolve(__dirname, 'packages/security/src'),
-      '@aegis/capabilities': path.resolve(__dirname, 'packages/capabilities/src'),
+      '@aegis/protocol': path.resolve(import.meta.dirname, 'packages/protocol/src'),
+      '@aegis/ui': path.resolve(import.meta.dirname, 'packages/ui/src'),
+      '@aegis/react': path.resolve(import.meta.dirname, 'packages/react/src'),
+      '@aegis/renderer': path.resolve(import.meta.dirname, 'packages/renderer/src'),
+      '@aegis/runtime': path.resolve(import.meta.dirname, 'packages/runtime/src'),
+      '@aegis/security': path.resolve(import.meta.dirname, 'packages/security/src'),
+      '@aegis/capabilities': path.resolve(import.meta.dirname, 'packages/capabilities/src'),
     },
   },
 });

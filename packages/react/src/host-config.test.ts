@@ -240,7 +240,7 @@ describe('@aegis/react/host-config', () => {
       commitUpdate(instance, updatePayload);
 
       expect(mockPostMessage).toHaveBeenCalled();
-      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1];
+      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1]!;
       expect(lastCall[0].type).toBe(UIMessageType.UpdateNode);
       expect(lastCall[0].payload.id).toBe('test');
     });
@@ -267,7 +267,7 @@ describe('@aegis/react/host-config', () => {
       commitTextUpdate(instance, 'new');
 
       expect(mockPostMessage).toHaveBeenCalled();
-      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1];
+      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1]!;
       expect(lastCall[0].type).toBe(UIMessageType.UpdateNode);
       expect(lastCall[0].payload.props.value).toBe('new');
     });
@@ -285,7 +285,7 @@ describe('@aegis/react/host-config', () => {
       commitMount(instance);
 
       expect(mockPostMessage).toHaveBeenCalled();
-      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1];
+      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1]!;
       expect(lastCall[0].type).toBe(UIMessageType.CreateNode);
       expect(lastCall[0].payload.id).toBe('new-node');
       expect(lastCall[0].payload.type).toBe(NodeType.View);
@@ -301,7 +301,7 @@ describe('@aegis/react/host-config', () => {
       commitUnmount(instance);
 
       expect(mockPostMessage).toHaveBeenCalled();
-      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1];
+      const lastCall = mockPostMessage.mock.calls[mockPostMessage.mock.calls.length - 1]!;
       expect(lastCall[0].type).toBe(UIMessageType.DeleteNode);
       expect(lastCall[0].payload.id).toBe('delete-node');
     });
