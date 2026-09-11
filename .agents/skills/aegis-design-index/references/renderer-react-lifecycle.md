@@ -1,12 +1,12 @@
-# Renderer and React Lifecycle
+# 渲染器与 React 生命周期
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./capabilities-package-security.md) · [Next →](./dataflow-performance-tooling.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./capabilities-package-security.md) · [下一篇 →](./dataflow-performance-tooling.md)
 
-包含应用身份、签名、动态导入、渲染器、可信计算基、UI Primitive、布局、Ref 与 React 生命周期。
+包含应用身份、签名、动态导入、渲染器、可信计算基、UI 原语、布局、引用与 React 生命周期。
 
 ---
 
-# 26. Application Identity
+# 26. 应用身份
 
 每一个 Application 有唯一：
 
@@ -28,7 +28,7 @@ com.example.todo
 
 ---
 
-# 27. Code Signing
+# 27. 代码签名
 
 生产环境支持：
 
@@ -58,7 +58,7 @@ Manifest
 
 ---
 
-# 28. Dynamic Import
+# 28. 动态导入
 
 不允许应用绕过 Package Security：
 
@@ -82,9 +82,9 @@ Allow / Deny
 
 ---
 
-# 29. Main Renderer
+# 29. 主线程渲染器
 
-Main Renderer 是 Trusted Computing Base 的核心。
+主线程渲染器是可信计算基的核心。
 
 职责只有：
 
@@ -105,7 +105,7 @@ Event Dispatcher
 
 ---
 
-# 30. Trusted Computing Base
+# 30. 可信计算基
 
 Aegis 应尽可能缩小 TCB：
 
@@ -134,7 +134,7 @@ State Library
 
 ---
 
-# 31. Renderer Architecture
+# 31. 渲染器架构
 
 Aegis Protocol 不应该绑定 DOM。
 
@@ -160,7 +160,7 @@ Native
 
 ---
 
-# 32. UI Primitive
+# 32. UI 原语
 
 Aegis 推荐定义语义化 Primitive：
 
@@ -214,7 +214,7 @@ Text → NativeText
 
 ---
 
-# 33. Layout
+# 33. 布局
 
 Worker 无法直接访问真实 Layout。
 
@@ -288,7 +288,7 @@ DOM
 
 ---
 
-# 35. React Lifecycle
+# 35. React 生命周期
 
 React 生命周期完全运行在 Worker：
 
@@ -322,4 +322,4 @@ Main
 
 ---
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./capabilities-package-security.md) · [Next →](./dataflow-performance-tooling.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./capabilities-package-security.md) · [下一篇 →](./dataflow-performance-tooling.md)

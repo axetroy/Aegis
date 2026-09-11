@@ -1,57 +1,57 @@
 ---
 name: aegis-design-index
-description: Umbrella skill for navigating the Aegis design corpus. Use when a task needs architecture context, security boundaries, protocol design, roadmap scoping, or local development guidance; route immediately to the smallest relevant design module.
+description: Aegis 设计文档的总索引技能。当任务需要架构背景、安全边界、协议设计、路线图范围判断或本地开发指引时使用；应立即路由到最小且最相关的设计模块。
 ---
 
-# Aegis Design Index
+# Aegis 设计索引
 
-This skill is the canonical entrypoint for the Aegis design corpus. It is a routing skill: do not restate the whole whitepaper when a narrower module answers the task.
+这个技能是 Aegis 设计文档的规范入口。它是一个路由型技能：当更窄的模块已经足够回答问题时，不要重复展开整份白皮书。
 
-Repository-local discovery entrypoint:
+仓库内发现入口：
 
 - [`aegis-design-index/SKILL.md`](./SKILL.md)
 
-Detailed design modules live inside this skill package under [`references/README.md`](./references/README.md).
+详细设计模块位于这个技能包内的 [`references/README.md`](./references/README.md)。
 
-## Package map
+## 技能包地图
 
-| Module | Focus | Link |
+| 模块 | 关注点 | 链接 |
 | --- | --- | --- |
-| 01 | 摘要、定位、威胁模型、安全模型、边界 | [Foundation and Security Model](./references/foundation-security-model.md) |
-| 02 | 总体架构、React 兼容、JSX、UI / Event Protocol | [Runtime Architecture and Protocol](./references/runtime-architecture-protocol.md) |
-| 03 | Capability、Manifest、权限策略、资源限制、包安全 | [Capabilities and Package Security](./references/capabilities-package-security.md) |
-| 04 | 应用身份、签名、渲染器、UI Primitive、生命周期 | [Renderer and React Lifecycle](./references/renderer-react-lifecycle.md) |
-| 05 | 数据流、交互流程、性能、DevTools、项目结构 | [Dataflow, Performance, and Tooling](./references/dataflow-performance-tooling.md) |
-| 06 | MVP、阶段路线图、产品模型、核心抽象、愿景 | [Roadmap and Vision](./references/roadmap-vision.md) |
-| 07 | 本地开发与阅读导航 | [Local Development Guide](./references/local-development.md) |
+| 01 | 摘要、定位、威胁模型、安全模型、边界 | [基础与安全模型](./references/foundation-security-model.md) |
+| 02 | 总体架构、React 兼容、JSX、UI / 事件协议 | [运行时架构与协议](./references/runtime-architecture-protocol.md) |
+| 03 | 能力、清单、权限策略、资源限制、包安全 | [能力与包安全](./references/capabilities-package-security.md) |
+| 04 | 应用身份、签名、渲染器、UI 原语、生命周期 | [渲染器与 React 生命周期](./references/renderer-react-lifecycle.md) |
+| 05 | 数据流、交互流程、性能、开发者工具、项目结构 | [数据流、性能与工具](./references/dataflow-performance-tooling.md) |
+| 06 | MVP、阶段路线图、产品模型、核心抽象、愿景 | [路线图与愿景](./references/roadmap-vision.md) |
+| 07 | 本地开发与阅读导航 | [本地开发指南](./references/local-development.md) |
 
-## Recommended reading paths
+## 推荐阅读路径
 
 - 初次理解 Aegis：[`01`](./references/foundation-security-model.md) → [`02`](./references/runtime-architecture-protocol.md) → [`03`](./references/capabilities-package-security.md) → [`04`](./references/renderer-react-lifecycle.md) → [`05`](./references/dataflow-performance-tooling.md) → [`06`](./references/roadmap-vision.md)
-- 想知道如何在当前仓库开展工作：先看 [07. Local Development Guide](./references/local-development.md)
+- 想知道如何在当前仓库开展工作：先看 [本地开发指南](./references/local-development.md)
 - 只需要某一类上下文：直接跳到对应模块，不要展开全部文档
 
-## Routing rules
+## 路由规则
 
-Pick the first module that matches and only load adjacent modules when the task crosses boundaries.
+优先选择第一个匹配的模块；只有当任务跨越边界时，才同时加载相邻模块。
 
-- Threat model, trusted boundary, main-thread rationale -> [Foundation and Security Model](./references/foundation-security-model.md)
-- Worker / host architecture, JSX, UI protocol, event protocol -> [Runtime Architecture and Protocol](./references/runtime-architecture-protocol.md)
-- Manifest, capability policy, storage, network, isolation, package security -> [Capabilities and Package Security](./references/capabilities-package-security.md)
-- Application identity, code signing, renderer design, layout, ref, lifecycle -> [Renderer and React Lifecycle](./references/renderer-react-lifecycle.md)
-- Dataflow, interaction flow, performance, DevTools, project structure -> [Dataflow, Performance, and Tooling](./references/dataflow-performance-tooling.md)
-- MVP scope, phase planning, product model, core abstraction, final vision -> [Roadmap and Vision](./references/roadmap-vision.md)
-- Reading order, repo status, documentation-first local development -> [Local Development Guide](./references/local-development.md)
+- 威胁模型、可信边界、为什么 UI 保持在主线程 -> [基础与安全模型](./references/foundation-security-model.md)
+- 工作线程 / 宿主架构、JSX、UI 协议、事件协议 -> [运行时架构与协议](./references/runtime-architecture-protocol.md)
+- 清单、能力策略、存储、网络、隔离、包安全 -> [能力与包安全](./references/capabilities-package-security.md)
+- 应用身份、代码签名、渲染器设计、布局、引用、生命周期 -> [渲染器与 React 生命周期](./references/renderer-react-lifecycle.md)
+- 数据流、交互流程、性能、开发者工具、项目结构 -> [数据流、性能与工具](./references/dataflow-performance-tooling.md)
+- MVP 范围、阶段规划、产品模型、核心抽象、最终愿景 -> [路线图与愿景](./references/roadmap-vision.md)
+- 阅读顺序、仓库状态、以设计为先阶段下的本地开发 -> [本地开发指南](./references/local-development.md)
 
-## First-pass workflow
+## 首次处理流程
 
-1. Decide whether the task is about security, protocol, renderer, roadmap, or contributor onboarding.
-2. Open the narrowest module that covers that topic.
-3. Use [Local Development Guide](./references/local-development.md) whenever the task is about how to read the repo, where to start, or how to stage local work from the design-first state.
-4. Return to this skill file when you need the package map.
+1. 先判断任务属于安全、协议、渲染、路线图，还是贡献者上手。
+2. 打开覆盖该主题的最小模块。
+3. 当任务关注如何阅读仓库、从哪里开始、或如何在当前以设计为先状态下推进本地工作时，优先使用 [本地开发指南](./references/local-development.md)。
+4. 当需要查看总览时，返回这个技能文件。
 
-## Output expectations
+## 输出期望
 
-- Treat this skill as a router, not as the source of design truth.
-- Prefer linking to the module file path that answers the question.
-- If the request spans multiple modules, enumerate the minimal set instead of unfolding the whole corpus.
+- 把这个技能当作路由器，而不是设计事实本身。
+- 优先给出能直接回答问题的模块文件路径。
+- 如果请求横跨多个模块，只列出最小必要集合，不要展开整套语料。

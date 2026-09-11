@@ -1,16 +1,16 @@
-# Capabilities and Package Security
+# 能力与包安全
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./runtime-architecture-protocol.md) · [Next →](./renderer-react-lifecycle.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./runtime-architecture-protocol.md) · [下一篇 →](./renderer-react-lifecycle.md)
 
-包含 Capability 安全、Manifest、权限策略、Network / Storage、隔离、资源限制、Worker DoS 与包安全。
+包含 Capability 安全、清单、权限策略、网络 / 存储、隔离、资源限制、Worker 拒绝服务与包安全。
 
 ---
 
-# 16. Capability Security
+# 16. Capability 安全
 
 Aegis 的第二个核心系统是：
 
-# Capability Manager
+# Capability 管理器
 
 应用不能直接：
 
@@ -34,7 +34,7 @@ PROMPT
 
 ---
 
-# 17. Manifest
+# 17. 清单
 
 应用拥有 Manifest：
 
@@ -75,7 +75,7 @@ camera
 
 ---
 
-# 18. Capability Policy
+# 18. Capability 策略
 
 Capability 不应该只有：
 
@@ -143,7 +143,7 @@ Worker 消失：
 
 ---
 
-# 20. Network
+# 20. 网络
 
 网络访问应该经过：
 
@@ -178,7 +178,7 @@ App A
 
 ---
 
-# 21. Storage
+# 21. 存储
 
 Storage 必须 Namespace Isolation：
 
@@ -206,7 +206,7 @@ app-b/token
 
 ---
 
-# 22. UI Isolation
+# 22. UI 隔离
 
 Host UI：
 
@@ -239,7 +239,7 @@ App A → System UI
 
 ---
 
-# 23. Resource Management
+# 23. 资源管理
 
 Aegis 不仅限制 API，也限制资源。
 
@@ -272,7 +272,7 @@ Tree Depth
 
 ---
 
-# 24. Worker DoS
+# 24. Worker 拒绝服务
 
 恶意应用：
 
@@ -296,7 +296,7 @@ Destroy UI
 
 ---
 
-# 25. Package Security
+# 25. 包安全
 
 Aegis 应用最终以 App Package 形式分发：
 
@@ -328,4 +328,4 @@ Install
 
 ---
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./runtime-architecture-protocol.md) · [Next →](./renderer-react-lifecycle.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./runtime-architecture-protocol.md) · [下一篇 →](./renderer-react-lifecycle.md)

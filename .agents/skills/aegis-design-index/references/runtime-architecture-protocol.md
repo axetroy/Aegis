@@ -1,8 +1,8 @@
-# Runtime Architecture and Protocol
+# 运行时架构与协议
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./foundation-security-model.md) · [Next →](./capabilities-package-security.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./foundation-security-model.md) · [下一篇 →](./capabilities-package-security.md)
 
-包含总体架构、React 兼容层级、JSX、UI Protocol、协议校验、Node Namespace 与 Event Protocol。
+包含总体架构、React 兼容层级、JSX、UI 协议、协议校验、节点命名空间与事件协议。
 
 ---
 
@@ -64,7 +64,7 @@
 
 ---
 
-# 9. React Compatibility
+# 9. React 兼容性
 
 Aegis 不重新实现 React。
 
@@ -228,9 +228,9 @@ Aegis Renderer
 
 ---
 
-# 12. UI Protocol
+# 12. UI 协议
 
-UI Protocol 是 Aegis 的核心安全边界之一。
+UI 协议是 Aegis 的核心安全边界之一。
 
 Worker 不允许直接调用：
 
@@ -281,7 +281,7 @@ REMOVE_CHILD
 
 ---
 
-# 13. Protocol Validation
+# 13. 协议校验
 
 Main Thread **永远不信任 Worker 消息**。
 
@@ -321,7 +321,7 @@ value 大小是否超限？
 
 ---
 
-# 14. Node Namespace
+# 14. 节点命名空间
 
 所有 UI Node 都属于某个 Application。
 
@@ -357,7 +357,7 @@ B:3
 
 ---
 
-# 15. Event Protocol
+# 15. 事件协议
 
 事件方向：
 
@@ -406,4 +406,4 @@ interface AegisEvent {
 
 ---
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./foundation-security-model.md) · [Next →](./capabilities-package-security.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./foundation-security-model.md) · [下一篇 →](./capabilities-package-security.md)

@@ -1,6 +1,6 @@
-# Roadmap and Vision
+# 路线图与愿景
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./dataflow-performance-tooling.md) · [Next →](./local-development.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./dataflow-performance-tooling.md) · [下一篇 →](./local-development.md)
 
 包含 MVP 到第四阶段的路线图、最终产品模型、核心设计原则、核心抽象与最终愿景。
 
@@ -318,4 +318,4 @@ export default function App() {
 
 ---
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./dataflow-performance-tooling.md) · [Next →](./local-development.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./dataflow-performance-tooling.md) · [下一篇 →](./local-development.md)

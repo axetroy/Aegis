@@ -1,22 +1,22 @@
-# Foundation and Security Model
+# 基础与安全模型
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [Next →](./runtime-architecture-protocol.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [下一篇 →](./runtime-architecture-protocol.md)
 
-包含摘要、项目定位、核心问题、威胁模型、安全模型、可信边界，以及为什么 UI 保持在 Main Thread。
+包含摘要、项目定位、核心问题、威胁模型、安全模型、可信边界，以及为什么 UI 保持在主线程。
 
 ---
 
-# Aegis Architecture Whitepaper
+# Aegis 架构白皮书
 
-### Secure, Capability-Based, Worker-Isolated UI Runtime
+### 基于 Capability 的 Worker 隔离安全 UI 运行时
 
-**Project:** Aegis
-**Version:** 1.0
-**Status:** Architecture Proposal
+**项目：**Aegis
+**版本：**1.0
+**状态：**架构提案
 
 # 1. 摘要
 
-Aegis 是一个面向**不受信任应用（Untrusted Applications）**的安全 UI Runtime。
+Aegis 是一个面向**不受信任应用**的安全 UI 运行时。
 
 Aegis 允许第三方开发者使用熟悉的：
 
@@ -42,9 +42,9 @@ Aegis 允许第三方开发者使用熟悉的：
 
 所有与宿主的交互必须通过 Aegis 定义的：
 
-1. **UI Protocol**
-2. **Capability Protocol**
-3. **Resource Policy**
+1. **UI 协议**
+2. **能力协议**
+3. **资源策略**
 
 完成。
 
@@ -266,11 +266,11 @@ Resource Control
 
 ---
 
-# 6. Trusted / Untrusted Boundary
+# 6. 可信 / 不可信边界
 
 Aegis 将整个系统分成两个区域。
 
-## Trusted Zone
+## 可信区域
 
 ```text
 Host
@@ -281,7 +281,7 @@ Resource Manager
 Native APIs
 ```
 
-## Untrusted Zone
+## 不可信区域
 
 ```text
 Application
@@ -325,7 +325,7 @@ Third-party Packages
 
 ---
 
-# 7. 为什么 UI 在 Main Thread？
+# 7. 为什么 UI 在主线程？
 
 Aegis 中 UI 放在 Main Thread **不是为了性能**。
 
@@ -378,4 +378,4 @@ Worker 永远拿不到真实对象。
 
 ---
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [Next →](./runtime-architecture-protocol.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [下一篇 →](./runtime-architecture-protocol.md)

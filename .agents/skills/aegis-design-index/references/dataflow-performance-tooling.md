@@ -1,8 +1,8 @@
-# Dataflow, Performance, and Tooling
+# 数据流、性能与工具
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./renderer-react-lifecycle.md) · [Next →](./roadmap-vision.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./renderer-react-lifecycle.md) · [下一篇 →](./roadmap-vision.md)
 
-包含数据流、交互流程、安全边界总结、与 React / 小程序架构的关系、性能原则、DevTools 与项目结构。
+包含数据流、交互流程、安全边界总结、与 React / 小程序架构的关系、性能原则、开发者工具与项目结构。
 
 ---
 
@@ -287,9 +287,9 @@ Shared Memory
 
 ---
 
-# 43. DevTools
+# 43. 开发者工具
 
-Aegis DevTools 应该同时观察：
+Aegis 开发者工具应该同时观察：
 
 ### Application
 
@@ -407,4 +407,4 @@ aegis/
 
 ---
 
-[↑ Back to Aegis Design Index](../SKILL.md) · [← Previous](./renderer-react-lifecycle.md) · [Next →](./roadmap-vision.md)
+[↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./renderer-react-lifecycle.md) · [下一篇 →](./roadmap-vision.md)
