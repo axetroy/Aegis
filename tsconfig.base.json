@@ -39,7 +39,15 @@
 
     // 路径别名（在各包中覆盖）
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@aegis/protocol": ["packages/protocol/dist"],
+      "@aegis/security": ["packages/security/dist"],
+      "@aegis/capabilities": ["packages/capabilities/dist"],
+      "@aegis/react": ["packages/react/dist"],
+      "@aegis/renderer": ["packages/renderer/dist"],
+      "@aegis/runtime": ["packages/runtime/dist"],
+      "@aegis/ui": ["packages/ui/dist"]
+    }
   },
   "exclude": [
     "node_modules",
