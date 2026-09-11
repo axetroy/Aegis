@@ -14,6 +14,15 @@ Aegis 是一个安全的应用运行时，允许第三方代码在隔离的环�
 - 📦 **能力系统** - 显式的权限控制和资源限制
 - 🛡️ **事件隔离** - 事件处理在安全边界内进行
 
+## 当前进度
+
+| 阶段 | 状态 | 说明 |
+|------|------|------|
+| 阶段一：MVP | ✅ 完成 | React → Worker → Renderer → DOM 完整链路，8 个核心包 |
+| 阶段二：能力与权限 | ✅ 完成 | PermissionManager、Storage/Network 能力、Input/Form/ScrollView/List、hooks |
+| 阶段三：应用包与签名 | 🔄 进行中 | .aegis 格式、Manifest、签名、模块加载器 |
+| 阶段四：平台与生态 | 📋 规划 | 多应用管理、应用商店、DevTools |
+
 ## 架构
 
 ```
@@ -48,22 +57,20 @@ Aegis 是一个安全的应用运行时，允许第三方代码在隔离的环�
 ```
 aegis/
 ├── packages/
-│   ├── protocol/       # UI/事件协议定义
-│   ├── runtime/        # Worker 运行时
-│   ├── react/          # React Reconciler 集成
+│   ├── protocol/       # UI/事件/能力协议定义
+│   ├── runtime/        # Worker 运行时基础
+│   ├── react/          # React Reconciler 集成 + Hooks
 │   ├── renderer/       # DOM 渲染器
-│   ├── ui/             # 基础 UI 原语
-│   ├── security/       # 安全策略
-│   ├── capabilities/   # 能力实现
-│   └── devtools/       # 开发者工具
+│   ├── ui/             # UI 原语（View/Text/Button/Input/Form/ScrollView/List）
+│   ├── security/       # 权限策略与资源限制
+│   └── capabilities/   # 能力实现（Storage/Network/Camera/Location）
 │
 ├── apps/
 │   ├── host/           # 宿主环境
-│   ├── playground/     # 演示应用
-│   └── inspector/      # 调试工具
+│   └── playground/     # 演示应用
 │
-├── docs/               # 文档
-└── tools/              # 构建工具
+├── tests/              # 集成测试与基准测试
+└── .github/workflows/  # CI 配置
 ```
 
 ## 快速开始

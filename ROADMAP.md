@@ -99,34 +99,34 @@ function App() {
 **实现步骤：**
 
 #### 2.1 React Hooks 扩展
-- [ ] 实现 useEffect Hook
-- [ ] 实现 useRef Hook
-- [ ] 实现 Context Provider/Consumer
+- [x] 实现 useEffect Hook
+- [x] 实现 useRef Hook
+- [x] 实现 Context Provider/Consumer
 
 #### 2.2 UI 组件扩展
-- [ ] Input 组件（受控/非受控）
-- [ ] Form 组件与表单状态管理
-- [ ] ScrollView 组件
-- [ ] List/FlatList 组件
+- [x] Input 组件（受控/非受控）
+- [x] Form 组件与表单状态管理
+- [x] ScrollView 组件
+- [x] List/FlatList 组件
 
 #### 2.3 能力系统实现
-- [ ] `packages/capabilities` - 能力实现
-  - [ ] Storage 能力（localStorage/sessionStorage）
-  - [ ] Network 能力（fetch/XMLHttpRequest）
-  - [ ] Camera 能力（预留接口）
-  - [ ] Location 能力（预留接口）
+- [x] `packages/capabilities` - 能力实现
+  - [x] Storage 能力（localStorage/sessionStorage）
+  - [x] Network 能力（fetch/XMLHttpRequest）
+  - [x] Camera 能力（预留接口）
+  - [x] Location 能力（预留接口）
 
 #### 2.4 安全策略
-- [ ] `packages/security` - 安全策略
-  - [ ] 能力清单定义
-  - [ ] 权限验证逻辑
-  - [ ] 资源限制配置
-  - [ ] 请求拦截与过滤
+- [x] `packages/security` - 安全策略
+  - [x] 能力清单定义
+  - [x] 权限验证逻辑
+  - [x] 资源限制配置
+  - [x] 请求拦截与过滤
 
 #### 2.5 能力 UI
-- [ ] 权限请求弹窗
-- [ ] 能力状态展示
-- [ ] 用户授权流程
+- [x] 权限请求弹窗
+- [x] 能力状态展示
+- [x] 用户授权流程
 
 **验收标准：**
 - ✓ useEffect 正确执行副作用
