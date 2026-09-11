@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.4.1",
   "description": "Aegis - 让不受信任的代码构建 UI，但永远不能拥有宿主",
   "workspaces": [
     "packages/*",
