@@ -1,6 +1,6 @@
 # 02. Runtime Architecture and Protocol
 
-[返回设计索引](../../DESIGN.md)
+[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
 
 包含总体架构、React 兼容层级、JSX、UI Protocol、协议校验、Node Namespace 与 Event Protocol。
 

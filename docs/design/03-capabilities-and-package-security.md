@@ -1,6 +1,6 @@
 # 03. Capabilities and Package Security
 
-[返回设计索引](../../DESIGN.md)
+[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
 
 包含 Capability 安全、Manifest、权限策略、Network / Storage、隔离、资源限制、Worker DoS 与包安全。
 

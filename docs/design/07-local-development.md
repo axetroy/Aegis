@@ -1,12 +1,12 @@
 # 07. Local Development Guide
 
-[返回设计索引](../../DESIGN.md)
+[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
 
 本仓库当前处于 **design-first** 阶段。当前仓库内容主要是架构设计文档，尚未包含 `# 44. 项目结构` 中描述的完整实现目录。
 
 ## 当前仓库状态
 
-- 当前仓库的主入口是 `/home/runner/work/Aegis/Aegis/DESIGN.md`
+- 当前仓库的主入口是 `/home/runner/work/Aegis/Aegis/.agents/skills/aegis-design-index/SKILL.md`
 - 详细设计已经按主题拆分到 `docs/design/`
 - 目前更适合先完成文档拆解、概念校准、模块边界确认，再逐步落地代码
 
@@ -88,7 +88,7 @@
 
 ## 从设计到实现的映射
 
-`DESIGN.md` 中已经给出推荐目录结构：
+`docs/design/05-dataflow-performance-and-tooling.md` 中已经给出推荐目录结构：
 
 - `packages/runtime/`：Worker、调度、生命周期
 - `packages/react/`：reconciler、host-config

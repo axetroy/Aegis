@@ -1,6 +1,6 @@
 # 01. Foundation and Security Model
 
-[返回设计索引](../../DESIGN.md)
+[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
 
 包含摘要、项目定位、核心问题、威胁模型、安全模型、可信边界，以及为什么 UI 保持在 Main Thread。
 

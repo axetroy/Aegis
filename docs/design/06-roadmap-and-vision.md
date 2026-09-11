@@ -1,6 +1,6 @@
 # 06. Roadmap and Vision
 
-[返回设计索引](../../DESIGN.md)
+[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
 
 包含 MVP 到第四阶段的路线图、最终产品模型、核心设计原则、核心抽象与最终愿景。
 

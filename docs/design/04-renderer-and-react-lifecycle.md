@@ -1,6 +1,6 @@
 # 04. Renderer and React Lifecycle
 
-[返回设计索引](../../DESIGN.md)
+[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
 
 包含应用身份、签名、动态导入、渲染器、可信计算基、UI Primitive、布局、Ref 与 React 生命周期。
 

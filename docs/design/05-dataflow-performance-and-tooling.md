@@ -1,6 +1,6 @@
 # 05. Dataflow, Performance, and Tooling
 
-[返回设计索引](../../DESIGN.md)
+[返回技能索引](../../.agents/skills/aegis-design-index/SKILL.md)
 
 包含数据流、交互流程、安全边界总结、与 React / 小程序架构的关系、性能原则、DevTools 与项目结构。
 
