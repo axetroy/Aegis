@@ -43,5 +43,8 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Test Packager (node env)
+        run: pnpm exec vitest run --config packages/packager/vitest.config.ts
+
       - name: Build
         run: pnpm build

@@ -1,0 +1,35 @@
+{
+  "name": "@aegis/packager",
+  "version": "0.1.0",
+  "description": "Aegis .aegis package format - pack, unpack, validate",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aegis/protocol": "workspace:*",
+    "jszip": "^3.10.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@aegis/security": "workspace:*",
+    "vitest": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.0"
+  }
+}

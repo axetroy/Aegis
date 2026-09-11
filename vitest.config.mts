@@ -9,6 +9,8 @@ export default defineConfig({
     include: [
       'packages/*/src/**/*.test.ts',
       'packages/*/src/**/*.test.tsx',
+      // packager 使用独立 node 环境，排除在此之外
+      '!packages/packager/src/**/*.test.ts',
       'tests/**/*.test.ts',
     ],
     exclude: ['node_modules', 'dist', 'coverage'],

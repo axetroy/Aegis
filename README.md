@@ -20,7 +20,7 @@ Aegis 是一个安全的应用运行时，允许第三方代码在隔离的环�
 |------|------|------|
 | 阶段一：MVP | ✅ 完成 | React → Worker → Renderer → DOM 完整链路，8 个核心包 |
 | 阶段二：能力与权限 | ✅ 完成 | PermissionManager、Storage/Network 能力、Input/Form/ScrollView/List、hooks |
-| 阶段三：应用包与签名 | 🔄 进行中 | .aegis 格式、Manifest、签名、模块加载器 |
+| 阶段三：应用包与签名 | ✅ 完成 | .aegis 格式、Manifest、签名、模块加载器 |
 | 阶段四：平台与生态 | 📋 规划 | 多应用管理、应用商店、DevTools |
 
 ## 架构
@@ -128,7 +128,7 @@ function App() {
 
 - [x] **阶段一：MVP** - 验证核心架构链路
 - [ ] **阶段二：能力与权限** - 增加完整的 Hooks 支持和能力系统
-- [ ] **阶段三：应用包与签名** - 形成真正的 .aegis 应用格式
+- [x] **阶段三：应用包与签名** - 形成真正的 .aegis 应用格式
 - [ ] **阶段四：平台与生态** - 构建完整的多应用平台
 
 详见 [ROADMAP.md](./ROADMAP.md)
