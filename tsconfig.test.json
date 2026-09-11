@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // 测试文件不需要生成声明文件
+    "declaration": false,
+    "declarationMap": false,
+    "outDir": "./dist-test",
+
+    // 测试文件可以使用 any
+    "noUncheckedIndexedAccess": false,
+
+    // 包含 vitest 类型
+    "types": ["vitest/globals", "node"]
+  },
+  "include": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/tests/**/*.ts",
+    "**/tests/**/*.tsx",
+    "**/vitest.config.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

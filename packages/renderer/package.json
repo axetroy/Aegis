@@ -1,0 +1,33 @@
+{
+  "name": "@aegis/renderer",
+  "version": "0.1.0",
+  "description": "Aegis DOM Renderer",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist dist-test"
+  },
+  "dependencies": {
+    "@aegis/protocol": "workspace:*"
+  },
+  "peerDependencies": {},
+  "devDependencies": {
+    "typescript": "^5.1.0"
+  }
+}

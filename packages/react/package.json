@@ -1,0 +1,39 @@
+{
+  "name": "@aegis/react",
+  "version": "0.1.0",
+  "description": "Aegis React Reconciler Integration",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist dist-test"
+  },
+  "dependencies": {
+    "@aegis/protocol": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-reconciler": "^0.29.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "react": "^18.2.0",
+    "react-reconciler": "^0.29.0",
+    "typescript": "^5.1.0"
+  }
+}

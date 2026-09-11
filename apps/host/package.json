@@ -1,0 +1,20 @@
+{
+  "name": "@aegis/host",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aegis Host - Secure Runtime Environment",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@aegis/protocol": "workspace:*",
+    "@aegis/renderer": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.0",
+    "vite": "^5.0.0"
+  }
+}

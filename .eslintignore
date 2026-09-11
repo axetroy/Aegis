@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.turbo/
+
+# Coverage
+coverage/
+
+# Generated files
+*.d.ts
+*.js.map
+
+# Package specific
+packages/*/dist/
+apps/*/dist/
+
+# Misc
+*.md
+*.json
+*.yaml
+*.yml
