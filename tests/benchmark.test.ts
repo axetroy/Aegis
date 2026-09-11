@@ -194,7 +194,6 @@ describe('Aegis Performance Benchmarks', () => {
 
   describe('Event Handling Performance', () => {
     it('should process 10,000 events within 1 second', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const handlers = new Map<string, (...args: any[]) => any>();
 
       for (let i = 0; i < 100; i++) {

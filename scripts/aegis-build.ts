@@ -49,7 +49,6 @@ if (command === 'build' && args[1]) {
   console.log(`  应用 ID: ${result.spec.manifest.id}`);
     }
   } catch (err) {
-    // eslint-disable-next-line no-console
   console.error(`✗ 打包失败: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
