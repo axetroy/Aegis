@@ -17,9 +17,10 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "typecheck": "tsc --noEmit",
-    "typecheck:packages": "pnpm --filter './packages/*' run typecheck",
-    "typecheck:apps": "pnpm --filter './apps/*' run typecheck",
-    "typecheck:all": "pnpm typecheck:packages && pnpm typecheck:apps",
+    "typecheck:packages": "pnpm -r --if-present run typecheck",
+    "typecheck:apps": "pnpm -r --if-present run typecheck",
+    "typecheck:scripts": "tsc --noEmit -p tsconfig.scripts.json",
+    "typecheck:all": "pnpm -r --if-present run typecheck && pnpm typecheck:scripts",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -28,6 +29,7 @@
     "aegis": "tsx scripts/aegis-build.ts"
   },
   "devDependencies": {
+    "@aegis/packager": "workspace:*",
     "@aegis/protocol": "workspace:*",
     "@aegis/react": "workspace:*",
     "@aegis/renderer": "workspace:*",

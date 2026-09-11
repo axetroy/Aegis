@@ -38,17 +38,16 @@
     "checkJs": false,
 
     // 路径别名（在各包中覆盖）
-    "baseUrl": ".",
     "paths": {
-      "@aegis/protocol": ["packages/protocol/dist"],
-      "@aegis/security": ["packages/security/dist"],
-      "@aegis/capabilities": ["packages/capabilities/dist"],
-      "@aegis/react": ["packages/react/dist"],
-      "@aegis/renderer": ["packages/renderer/dist"],
-      "@aegis/runtime": ["packages/runtime/dist"],
-      "@aegis/ui": ["packages/ui/dist"],
-      "@aegis/packager": ["packages/packager/dist"],
-      "@aegis/loader": ["packages/loader/dist"]
+      "@aegis/protocol": ["./packages/protocol/dist"],
+      "@aegis/security": ["./packages/security/dist"],
+      "@aegis/capabilities": ["./packages/capabilities/dist"],
+      "@aegis/react": ["./packages/react/dist"],
+      "@aegis/renderer": ["./packages/renderer/dist"],
+      "@aegis/runtime": ["./packages/runtime/dist"],
+      "@aegis/ui": ["./packages/ui/dist"],
+      "@aegis/packager": ["./packages/packager/dist"],
+      "@aegis/loader": ["./packages/loader/dist"]
     }
   },
   "exclude": [
