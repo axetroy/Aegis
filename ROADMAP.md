@@ -13,17 +13,21 @@ Aegis 是一个安全的应用运行时，允许不受信任的代码构建 UI�
 
 ### 阶段一：MVP（最小可行产品）
 
-**目标：** 验证核心架构链路：React → Worker → Aegis Renderer → UI Protocol → Main → DOM
+**目标：** 验证核心架构链路：Container → Adapter → Worker → Context Injection → React → UI Protocol → Main → DOM
 
 **验证范围：**
 - JSX 支持
 - React 运行时
 - Worker 执行隔离
+- Container 容器隔离
+- Adapter 代码加载
+- Context 注入（沙箱化全局对象）
 - useState Hook
 - UI Protocol 通信
 - Main Renderer 渲染
 - Event Protocol 事件处理
 - Node Isolation 节点隔离
+- SDK-only 通信（用户通过 hooks/components 交互，无法访问 Protocol API）
 
 **实现步骤：**
 
@@ -34,11 +38,14 @@ Aegis 是一个安全的应用运行时，允许不受信任的代码构建 UI�
 - [ ] 配置 ESLint + Prettier
 
 #### 1.2 核心包实现
-- [ ] `packages/protocol` - UI/事件协议定义
+- [ ] `packages/protocol` - UI/事件协议定义（内部 `__aegis_protocol`，用户不可见）
 - [ ] `packages/runtime` - Worker 运行时基础
+- [ ] `packages/container` - 容器核心、上下文注入、沙箱化
+- [ ] `packages/adapter` - Adapter 接口定义、本地/远程/文件系统适配器
 - [ ] `packages/react` - React Reconciler 集成
 - [ ] `packages/renderer` - DOM 渲染器
 - [ ] `packages/ui` - 基础 UI 原语（View, Text, Button）
+- [ ] `packages/loader` - 模块加载器
 
 #### 1.3 演示应用
 - [ ] `apps/playground` - 计数器演示应用
@@ -70,11 +77,15 @@ function App() {
 - ✓ JSX 语法支持
 - ✓ React 组件渲染
 - ✓ Worker 中执行应用代码
+- ✓ Container 隔离执行环境
+- ✓ Adapter 加载应用代码
+- ✓ Context 注入沙箱化全局对象
 - ✓ useState 状态管理
-- ✓ UI Protocol 消息传递
+- ✓ UI Protocol 消息传递（内部 `__aegis_protocol`）
 - ✓ 主线程 DOM 渲染
 - ✓ 事件处理闭环
 - ✓ 节点隔离验证
+- ✓ 用户通过 SDK hooks/components 通信，无法访问 Protocol API
 
 ---
 
@@ -295,21 +306,28 @@ aegis/
 │
 ├── packages/
 │   ├── runtime/          # Worker 运行时、调度、生命周期
+│   ├── container/        # 容器核心、上下文注入、沙箱化
+│   ├── adapter/          # Adapter 接口、本地/远程/文件系统适配器
+│   ├── loader/           # 模块加载器
 │   ├── react/            # Reconciler、host-config
-│   ├── protocol/         # UI / 事件 / 能力协议
+│   ├── protocol/         # UI / 事件 / 能力协议（内部 __aegis_*，用户不可见）
 │   ├── security/         # Policy、permission、validation
 │   ├── capabilities/     # 网络、存储等能力实现
 │   ├── renderer/         # DOM 渲染器
 │   ├── ui/               # 基础 UI 原语
-│   └── devtools/         # 开发者工具
+│   ├── devtools/         # 开发者工具
+│   └── packager/         # 打包工具
 │
 ├── apps/
 │   ├── host/             # 宿主环境
-│   ├── playground/       # 演示应用
-│   └── inspector/        # 调试工具
+│   └── playground/       # 开发调试
 │
-├── docs/                 # 文档
-└── tools/                # 构建工具、脚本
+├── scripts/
+│   └── aegis-build.ts    # 构建脚本
+│
+└── tests/
+    ├── integration.test.ts  # 集成测试
+    └── benchmark.test.ts    # 性能测试
 ```
 
 ---
@@ -318,11 +336,16 @@ aegis/
 
 1. Application code is untrusted.（应用代码不可信）
 2. Worker provides execution isolation.（Worker 提供执行隔离）
-3. Application never receives real DOM or Native objects.（应用永远不接触真实 DOM）
-4. All Host interaction happens through explicit protocols.（所有交互通过协议）
-5. Capabilities are explicit and deny-by-default.（能力默认拒绝）
-6. Host validates every message from Worker.（宿主验证所有消息）
-7. Resource usage is bounded.（资源使用有界）
+3. Worker is not the sole security boundary.（Worker 不是唯一安全边界）
+4. Application never receives real DOM or Native objects.（应用永远不接触真实 DOM）
+5. All Host interaction happens through SDK (hooks / components), never through raw Protocol API.（所有交互通过 SDK，不通过原始 Protocol API）
+6. Users cannot forge Protocol messages — they have no access to the internal Protocol channel.（用户无法伪造 Protocol 消息）
+7. Capabilities are explicit and deny-by-default.（能力默认拒绝）
+8. Every Application has isolated UI and storage namespaces.（每个应用有独立的 UI 和存储命名空间）
+9. Host validates every message from Worker.（宿主验证所有消息）
+10. Resource usage is bounded.（资源使用有界）
+11. Capability lifetime follows Application lifetime.（能力生命周期跟随应用生命周期）
+12. React is an implementation detail, not a guarantee.（React 是实现细节，不是保证）
 
 ---
 
