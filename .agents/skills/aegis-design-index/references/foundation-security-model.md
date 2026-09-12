@@ -88,6 +88,108 @@ Aegis 的核心理念：
 
 ---
 
+# 1.1 应用加载流程
+
+应用从外部世界进入 Aegis 运行时，需要经过一条明确的加载路径：
+
+```text
+业务程序
+  │
+  ▼
+Host 创建 Container（容器）
+  │
+  ▼
+Container 通过 Adapter 加载应用
+  │  ├─ LocalPackageAdapter   本地 .aegis 包
+  │  ├─ RemoteURLAdapter     远程 URL
+  │  └─ FileSystemAdapter    文件系统
+  │
+  ▼
+Host 创建 Worker 进程
+  │
+  ▼
+加载程序包代码（Runtime 基础代码）
+  │
+  ▼
+注入上下文（Context）
+  │  ├─ 替换全局对象（阻止访问 postMessage 等）
+  │  ├─ 注入 Protocol Client
+  │  ├─ 注入 Capability Client
+  │  └─ 注入 Resource Tracker
+  │
+  ▼
+加载用户代码（应用入口）
+  │
+  ▼
+应用运行
+```
+
+### Container（容器）
+
+Container 是 Host 为每个应用创建的隔离执行环境。一个 Container 管理一个应用的完整生命周期：
+
+```text
+Container
+  ├── Worker 进程        隔离执行
+  ├── PermissionManager  权限管理
+  ├── ResourceTracker    资源追踪
+  ├── ProtocolBridge     协议桥接
+  └── Adapter            应用来源
+```
+
+### Adapter（适配器）
+
+Adapter 负责从不同来源获取应用代码。Host 不直接加载代码，而是委托给 Adapter：
+
+```text
+┌──────────────────────────────────────┐
+│              Adapter 接口             │
+│                                      │
+│  load(config): Promise<PackageCode>  │
+│                                      │
+├──────────────┬──────────────┬────────┤
+│ LocalPackage │  RemoteURL   │  FS    │
+│ Adapter      │  Adapter     │Adapter │
+├──────────────┼──────────────┼────────┤
+│ .aegis 包    │  远程 URL    │ 文件系统│
+│ 签名验证     │  HTTPS       │ 本地路径│
+│ 哈希校验     │  缓存        │  监听   │
+└──────────────┴──────────────┴────────┘
+```
+
+### Context 注入（上下文沙箱）
+
+Worker 创建后，Host 不直接运行用户代码。而是先注入受限上下文：
+
+```text
+Host 注入的上下文：
+  ├── __aegis_protocol    Protocol Client（内部通道，用户不可见）
+  ├── __aegis_capability  Capability Client（内部通道，用户不可见）
+  ├── __aegis_resource    Resource Tracker（内部通道，用户不可见）
+  └── 全局对象替换         阻止访问 postMessage / self / importScripts 等
+```
+
+用户通过框架 SDK（React Hooks / 组件）间接交互，无法直接访问 Protocol：
+
+```text
+用户看到的（SDK 提供）：
+  useState / useEffect / useCallback
+  useAegisStorage(key)
+  useAegisCapability(name)
+  useAegisNetwork(config)
+  <AegisView> / <AegisText> / <AegisButton>
+
+用户看不到的（框架内部）：
+  __aegis_protocol.sendMessage(...)   ← 仅 Reconciler 内部使用
+  __aegis_capability.request(...)     ← 仅 SDK hooks 内部使用
+  self.postMessage(...)               ← 被拦截
+  self.close(...)                     ← 被拦截
+  importScripts(...)                  ← 被拦截
+  window / document                   ← 不存在
+```
+
+---
+
 # 2. 项目定位
 
 Aegis 的完整定义：

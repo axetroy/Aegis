@@ -358,49 +358,89 @@ aegis/
 ├── packages/
 │
 │   ├── runtime/
-│   │   ├── worker/
-│   │   ├── scheduler/
-│   │   └── lifecycle/
+│   │   ├── worker-runtime.ts      Worker 运行时
+│   │   ├── scheduler.ts           任务调度
+│   │   └── lifecycle.ts           生命周期管理
+│   │
+│   ├── container/
+│   │   ├── container.ts           容器核心
+│   │   ├── context-injector.ts    上下文注入
+│   │   └── sandbox.ts             沙箱化全局对象
+│   │
+│   ├── adapter/
+│   │   ├── types.ts               Adapter 接口定义
+│   │   ├── local-package.ts       本地 .aegis 包适配器
+│   │   ├── remote-url.ts          远程 URL 适配器
+│   │   └── filesystem.ts          文件系统适配器
+│   │
+│   ├── loader/
+│   │   └── index.ts               模块加载器
 │   │
 │   ├── react/
-│   │   ├── reconciler/
-│   │   └── host-config/
+│   │   ├── reconciler/            React Reconciler
+│   │   └── host-config/           Host Config
 │   │
 │   ├── protocol/
-│   │   ├── ui/
-│   │   ├── event/
-│   │   └── capability/
+│   │   ├── ui/                    UI 协议
+│   │   ├── event/                 事件协议
+│   │   └── capability/            能力协议
 │   │
 │   ├── security/
-│   │   ├── policy/
-│   │   ├── permission/
-│   │   └── validation/
+│   │   ├── permission-manager.ts  权限管理
+│   │   ├── policies.ts            安全策略
+│   │   └── types.ts               类型定义
 │   │
 │   ├── capabilities/
-│   │   ├── network/
-│   │   ├── storage/
-│   │   ├── camera/
-│   │   └── location/
+│   │   ├── camera.ts              摄像头
+│   │   ├── storage.ts             存储
+│   │   ├── network.ts             网络
+│   │   └── location.ts            定位
 │   │
 │   ├── renderer/
-│   │   ├── dom/
-│   │   ├── miniapp/
-│   │   └── native/
+│   │   └── dom-renderer.ts        DOM 渲染器
 │   │
 │   ├── ui/
-│   │   ├── View/
-│   │   ├── Text/
-│   │   ├── Button/
-│   │   └── Input/
+│   │   └── components/            基础 UI 原语
 │   │
-│   └── devtools/
+│   ├── devtools/
+│   │   └── inspector/             运行时检查工具
+│   │
+│   └── packager/
+│       └── src/                   打包工具
 │
 ├── apps/
-│   ├── host/
-│   ├── playground/
-│   └── inspector/
+│   ├── host/                      Host 应用入口
+│   └── playground/                开发调试
 │
-└── docs/
+├── scripts/
+│   └── aegis-build.ts             构建脚本
+│
+└── tests/
+    ├── integration.test.ts        集成测试
+    └── benchmark.test.ts          性能测试
+```
+
+### 关键模块关系
+
+```text
+Host (apps/host/)
+  │
+  ├── Container (packages/container/)
+  │     │
+  │     ├── Adapter (packages/adapter/)
+  │     │     └── load() → PackageCode
+  │     │
+  │     ├── ContextInjector (packages/container/)
+  │     │     └── inject() → 沙箱化 Worker
+  │     │
+  │     └── Worker (packages/runtime/)
+  │           └── 运行用户代码
+  │
+  ├── PermissionManager (packages/security/)
+  │     └── 检查能力请求
+  │
+  └── Renderer (packages/renderer/)
+        └── 将 Protocol 消息渲染为 UI
 ```
 
 ---

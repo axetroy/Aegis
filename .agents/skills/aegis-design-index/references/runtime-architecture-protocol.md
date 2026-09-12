@@ -64,6 +64,168 @@
 
 ---
 
+# 8.1 应用加载架构（Container + Adapter）
+
+Host 不直接加载应用代码。它通过 **Container** 和 **Adapter** 两层抽象完成加载。
+
+### 加载流程
+
+```text
+业务程序
+  │
+  ▼
+Host.createContainer(config)
+  │
+  ▼
+Container
+  │
+  ├── 1. Adapter.load()          获取应用代码
+  │     ├── LocalPackageAdapter   本地 .aegis 包
+  │     ├── RemoteURLAdapter     远程 URL（HTTPS）
+  │     └── FileSystemAdapter    文件系统路径
+  │
+  ├── 2. Worker 创建              隔离执行环境
+  │
+  ├── 3. Context 注入             沙箱化全局对象
+  │     ├── 替换 self.postMessage  → 拦截
+  │     ├── 替换 self.close       → 拦截
+  │     ├── 注入 __aegis_protocol  → 内部通信通道（用户不可见）
+  │     ├── 注入 __aegis_capability → 内部能力通道（用户不可见）
+  │     └── 注入 __aegis_resource   → 内部资源追踪（用户不可见）
+  │
+  └── 4. 加载用户代码              执行应用入口（通过 SDK hooks 交互）
+```
+
+### Container 生命周期
+
+```text
+Host.createContainer()
+  → Container 初始化
+    → Adapter.load() 获取代码
+    → Worker 创建
+    → Context 注入
+    → 用户代码加载
+  → Container 运行中
+    → Protocol 消息交换
+    → 能力请求/授权
+    → 资源监控
+  → Container.destroy()
+    → 终止 Worker
+    → 撤销所有能力
+    → 清理资源
+```
+
+### Adapter 接口
+
+```typescript
+interface AegisAdapter {
+  /** 加载应用代码 */
+  load(config: LoadConfig): Promise<PackageCode>;
+  /** 检查是否支持该来源 */
+  supports(source: AppSource): boolean;
+  /** 卸载/清理 */
+  unload(): Promise<void>;
+}
+
+interface PackageCode {
+  /** 应用入口代码 */
+  entryCode: string;
+  /** 清单 */
+  manifest: AppManifest;
+  /** 依赖代码（如有） */
+  modules?: Map<string, string>;
+  /** 签名信息 */
+  signature?: SignatureInfo;
+}
+```
+
+### 三种 Adapter
+
+```text
+┌─────────────────────────────────────────────┐
+│ LocalPackageAdapter                          │
+│                                              │
+│  source: "./my-app.aegis"                   │
+│  流程: 读取包 → 验证签名 → 解压 → 返回代码   │
+│                                              │
+├─────────────────────────────────────────────┤
+│ RemoteURLAdapter                             │
+│                                              │
+│  source: "https://cdn.example.com/app.aegis"│
+│  流程: HTTPS 获取 → 验证签名 → 缓存 → 返回  │
+│                                              │
+├─────────────────────────────────────────────┤
+│ FileSystemAdapter                            │
+│                                              │
+│  source: "/path/to/app/"                    │
+│  流程: 读取目录 → 加载入口文件 → 返回代码     │
+│  用途: 本地开发调试                          │
+│                                              │
+└─────────────────────────────────────────────┘
+```
+
+### Context 注入机制
+
+Worker 创建后，Host 在执行用户代码之前注入受限上下文。这是安全的关键环节：
+
+```text
+Worker 全局作用域
+  │
+  ├── 原生 API        ← 被替换或移除
+  │   self.postMessage  → 拦截（通过内部 Protocol 通道）
+  │   self.close        → 拦截
+  │   importScripts     → 拦截
+  │   fetch             → 拦截（通过 Capability）
+  │   XMLHttpRequest    → 移除
+  │
+  ├── 注入的内部通道   ← 框架 SDK 内部使用，用户不可见
+  │   __aegis_protocol  → Protocol Client（仅 Reconciler / SDK 内部调用）
+  │   __aegis_capability → Capability Client（仅 SDK hooks 内部调用）
+  │   __aegis_resource   → Resource Tracker（仅 SDK 内部调用）
+  │
+  └── 用户代码         ← 通过框架 SDK（hooks / components）与外界交互
+```
+
+关键设计原则：
+
+> **用户永远不直接调用 Protocol API。**
+> **用户通过 React Hooks 和 SDK 组件间接通信。**
+> **用户无法伪造 Protocol 消息。**
+
+用户只看到框架 SDK：
+
+```jsx
+// 用户代码 — 使用 React Hooks
+const [count, setCount] = useState(0)
+const { data } = useAegisStorage('my-key')
+const camera = useAegisCapability('camera')
+```
+
+SDK 内部（用户不可见）：
+
+```text
+useAegisStorage('my-key')
+  → 内部调用 __aegis_protocol.sendMessage('storage:get', { key })
+  → Host 验证 → 执行 → 返回结果
+
+useAegisCapability('camera')
+  → 内部调用 __aegis_capability.request('camera')
+  → Host 决定 ALLOW / DENY / PROMPT
+```
+
+用户无法绕过：
+
+```text
+// 用户代码
+self.postMessage({ type: 'capability:grant', ... })
+// ↑ TypeError: self.postMessage is not a function
+
+__aegis_protocol.sendMessage('capability:grant', ...)
+// ↑ TypeError: __aegis_protocol is not defined（用户作用域中不存在）
+```
+
+---
+
 # 9. React 兼容性
 
 Aegis 不重新实现 React。

@@ -92,15 +92,20 @@
 
 [数据流、性能与工具](./dataflow-performance-tooling.md) 中已经给出推荐目录结构：
 
-- `packages/runtime/`：工作线程、调度、生命周期
+- `packages/runtime/`：Worker 运行时、调度、生命周期
+- `packages/container/`：容器核心、上下文注入、沙箱化
+- `packages/adapter/`：适配器接口、本地包 / 远程 URL / 文件系统适配器
+- `packages/loader/`：模块加载器
 - `packages/react/`：reconciler、host-config
 - `packages/protocol/`：UI / 事件 / 能力协议
-- `packages/security/`：policy、permission、validation
-- `packages/capabilities/`：网络、存储等能力实现
-- `packages/renderer/`：DOM、小程序、原生渲染器
+- `packages/security/`：permission-manager、policies、types
+- `packages/capabilities/`：网络、存储、摄像头、定位
+- `packages/renderer/`：DOM 渲染器
 - `packages/ui/`：基础 UI 原语
 - `packages/devtools/`：运行时与安全观测
-- `apps/host/`、`apps/playground/`、`apps/inspector/`：宿主、演示、调试入口
+- `packages/packager/`：打包工具
+- `apps/host/`：Host 应用入口
+- `apps/playground/`：开发调试
 
 其中 `runtime`、`react`、`protocol`、`security`、`capabilities`、`renderer`、`ui`、`host` 和 `playground` 已存在；`devtools`、`inspector` 等路径仍属于后续设计目标。
 

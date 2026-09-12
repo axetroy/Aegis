@@ -144,24 +144,36 @@ Aegis 最终不是一个单纯的 Framework，而是三个层次：
     Aegis Runtime   Aegis Host       Aegis SDK
         │                │                │
         │                │                │
-      React          Security          JSX
-      Worker         Capability        UI
-      Runtime        Renderer          APIs
+      React          Security          Hooks
+      Worker         Capability        Components
+      Runtime        Renderer          UI Primitives
 ```
 
 其中：
 
 ### Aegis Runtime
 
-运行第三方应用。
+运行第三方应用。包含 Container、Adapter、Worker 管理。
 
 ### Aegis Host
 
-提供可信环境。
+提供可信环境。管理权限、策略、渲染。
 
 ### Aegis SDK
 
 让开发者开发应用。
+
+```text
+SDK 提供的 API（用户唯一入口）：
+  React Hooks:     useState, useEffect, useCallback, ...
+  Aegis Hooks:     useAegisStorage, useAegisCapability, useAegisNetwork
+  Aegis Components: <AegisView>, <AegisText>, <AegisButton>, <AegisInput>
+
+SDK 不暴露的（用户永远无法访问）：
+  Protocol API:    __aegis_protocol.sendMessage(...)
+  Capability API:  __aegis_capability.request(...)
+  Worker API:      self.postMessage(...)
+```
 
 ---
 
@@ -178,23 +190,27 @@ Aegis 最终应该遵循以下原则：
 
 04. Application never receives real DOM or Native objects.
 
-05. All Host interaction happens through explicit protocols.
+05. All Host interaction happens through SDK (hooks / components),
+    never through raw Protocol API.
 
-06. Capabilities are explicit and deny-by-default.
+06. Users cannot forge Protocol messages — they have no access
+    to the internal Protocol channel.
 
-07. Every Application has isolated UI and storage namespaces.
+07. Capabilities are explicit and deny-by-default.
 
-08. Host validates every message from Worker.
+08. Every Application has isolated UI and storage namespaces.
 
-09. Resource usage is bounded.
+09. Host validates every message from Worker.
 
-10. Capability lifetime follows Application lifetime.
+10. Resource usage is bounded.
 
-11. React is an application runtime, not a security boundary.
+11. Capability lifetime follows Application lifetime.
 
-12. UI libraries cannot bypass the Capability system.
+12. React is an application runtime, not a security boundary.
 
-13. Trusted Host code must remain minimal.
+13. UI libraries cannot bypass the Capability system.
+
+14. Trusted Host code must remain minimal.
 
 14. Performance optimizations must never weaken isolation.
 
