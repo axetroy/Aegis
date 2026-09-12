@@ -38,6 +38,9 @@ export default defineConfig({
       '@aegis/runtime': path.resolve(import.meta.dirname, 'packages/runtime/src'),
       '@aegis/security': path.resolve(import.meta.dirname, 'packages/security/src'),
       '@aegis/capabilities': path.resolve(import.meta.dirname, 'packages/capabilities/src'),
+      '@aegis/container': path.resolve(import.meta.dirname, 'packages/container/src'),
+      '@aegis/adapter': path.resolve(import.meta.dirname, 'packages/adapter/src'),
+      '@aegis/loader': path.resolve(import.meta.dirname, 'packages/loader/src'),
     },
   },
 });

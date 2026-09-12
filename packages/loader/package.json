@@ -21,8 +21,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@aegis/protocol": "workspace:*",
-    "@aegis/packager": "workspace:*"
+    "@aegis/protocol": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

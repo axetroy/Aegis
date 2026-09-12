@@ -295,6 +295,19 @@ importers:
         specifier: ^8.3.0
         version: 8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13)
 
+  packages/adapter:
+    dependencies:
+      '@aegis/packager':
+        specifier: workspace:*
+        version: link:../packager
+      '@aegis/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/capabilities:
     dependencies:
       '@aegis/protocol':
@@ -314,11 +327,24 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@22.20.2)(@vitest/coverage-v8@5.0.0)(jsdom@27.4.0(supports-color@7.2.0))(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
 
+  packages/container:
+    dependencies:
+      '@aegis/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@aegis/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@aegis/security':
+        specifier: workspace:*
+        version: link:../security
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/loader:
     dependencies:
-      '@aegis/packager':
-        specifier: workspace:*
-        version: link:../packager
       '@aegis/protocol':
         specifier: workspace:*
         version: link:../protocol

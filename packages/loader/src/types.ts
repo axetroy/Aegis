@@ -30,5 +30,42 @@ export interface ModuleResolution {
   /** 解析到的模块 */
   module: LoadedModule | null;
   /** 未解析的依赖列表 */
-  unresolved: string[];
+  unmatched: string[];
+}
+
+// 包代码（与 @aegis/adapter.PackageCode 保持一致）
+export interface PackageCode {
+  /** 应用入口代码 */
+  entryCode: string;
+  /** 应用清单 */
+  manifest: {
+    name: string;
+    version: string;
+    id?: string;
+    permissions: string[];
+  };
+  /** 依赖代码（模块路径 → 代码） */
+  modules?: Map<string, string>;
+  /** 签名信息 */
+  signature?: {
+    algorithm: string;
+    publicKey: string;
+    signature: string;
+    dataHash: string;
+    signedAt: string;
+  };
+  /** 包哈希 */
+  packageHash?: string;
+}
+
+// 模块加载器接口
+export interface ModuleLoader {
+  /** 加载包代码 */
+  loadPackage(packageCode: PackageCode): Promise<LoadedModule>;
+  /** 解析模块 */
+  resolve(moduleId: string): LoadedModule | null;
+  /** 清除缓存 */
+  clearCache(): void;
+  /** 获取缓存统计 */
+  getCacheStats(): { size: number; hits: number; misses: number };
 }
