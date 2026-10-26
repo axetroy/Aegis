@@ -7,6 +7,8 @@
 export { LocalPackageAdapter } from './local-package.js';
 export { RemoteURLAdapter } from './remote-url.js';
 export { FileSystemAdapter } from './filesystem.js';
+export { extractAegisPackage } from './extract-aegis-package.js';
+export type { AegisPackageExtractResult } from './extract-aegis-package.js';
 export type {
   AppSourceType,
   LoadConfig,

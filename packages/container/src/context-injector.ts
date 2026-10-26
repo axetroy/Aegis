@@ -185,10 +185,30 @@ export function createContextInjector(config: ContainerConfig): {
       }
     };
 
+    const handleWorkerError = (event: ErrorEvent): void => {
+      const message: InternalMessage = {
+        type: '__aegis_error',
+        payload: { message: event.message || 'Worker execution failed' },
+      };
+      for (const handler of messageHandlers) handler(message);
+    };
+
+    const handleWorkerMessageError = (): void => {
+      const message: InternalMessage = {
+        type: '__aegis_error',
+        payload: { message: 'Worker message could not be deserialized' },
+      };
+      for (const handler of messageHandlers) handler(message);
+    };
+
     worker.addEventListener('message', handleWorkerMessage);
+    worker.addEventListener('error', handleWorkerError);
+    worker.addEventListener('messageerror', handleWorkerMessageError);
 
     const destroy = (): void => {
       worker.removeEventListener('message', handleWorkerMessage);
+      worker.removeEventListener('error', handleWorkerError);
+      worker.removeEventListener('messageerror', handleWorkerMessageError);
       messageHandlers.clear();
     };
 

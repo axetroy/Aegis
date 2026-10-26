@@ -35,6 +35,25 @@ export class Container implements AegisContainer {
   readonly appId: string;
   readonly manifest: AppManifest;
 
+  static async fromPackage(
+    source: File | Blob | ArrayBuffer,
+    options?: {
+      appId?: string;
+      resourceLimits?: ContainerConfig['resourceLimits'];
+      signature?: ContainerConfig['signature'];
+    },
+  ): Promise<Container> {
+    const { extractAegisPackage } = await import('@aegis/adapter/extract-aegis-package');
+    const result = await extractAegisPackage(source);
+    return new Container({
+      appId: options?.appId || result.manifest.name || 'unknown-app',
+      manifest: result.manifest,
+      entryCode: result.entryCode,
+      resourceLimits: options?.resourceLimits,
+      signature: options?.signature,
+    });
+  }
+
   private _state: ContainerState = ContainerState.Created;
   private _worker: Worker | null = null;
   private _sandbox: ReturnType<typeof createSandbox> | null = null;

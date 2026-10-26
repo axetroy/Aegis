@@ -10,6 +10,11 @@
       "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./extract-aegis-package": {
+      "source": "./src/extract-aegis-package.ts",
+      "types": "./dist/extract-aegis-package.d.ts",
+      "import": "./dist/extract-aegis-package.js"
     }
   },
   "scripts": {
@@ -26,7 +31,8 @@
   },
   "dependencies": {
     "@aegis/protocol": "workspace:*",
-    "@aegis/packager": "workspace:*"
+    "@aegis/packager": "workspace:*",
+    "jszip": "^3.10.2"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

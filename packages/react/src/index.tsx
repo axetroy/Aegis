@@ -3,12 +3,75 @@
  *
  * Aegis React Reconciler Integration & Hooks
  */
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./react-reconciler.d.ts" />
 
 // 导出 host-config
 export * from './host-config';
 
 // React Hooks 扩展
 import React from 'react';
+import ReactReconciler, { type Instance as HostConfig } from 'react-reconciler';
+import * as AegisHostConfig from './host-config';
+import { dispatchAegisEvent, removeGlobalStyleSheet, setGlobalStyleSheet } from './host-config';
+
+const reconciler = ReactReconciler(AegisHostConfig as unknown as HostConfig);
+
+interface ProtocolMessage {
+  type: string;
+  payload?: unknown;
+}
+
+interface ProtocolChannel {
+  onMessage(handler: (message: ProtocolMessage) => void): () => void;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function render(element: React.ReactElement): () => void {
+  const containerInfo = { appId: 'app', children: [] as string[] };
+  const container = reconciler.createContainer(
+    containerInfo,
+    0,
+    null,
+    false,
+    null,
+    '',
+    (error: unknown) => console.error('[Aegis] Uncaught error:', error),
+    (error: unknown) => console.error('[Aegis] Caught error:', error),
+    (error: unknown) => console.warn('[Aegis] Recoverable error:', error),
+    null,
+  );
+  const protocol = (self as unknown as { __aegis_protocol?: ProtocolChannel }).__aegis_protocol;
+  const unsubscribe = protocol?.onMessage((message) => {
+    if (message.type !== 'protocol' || !isRecord(message.payload)) return;
+    if (message.payload['type'] !== 'event:dispatch') return;
+    dispatchAegisEvent(message.payload['payload']);
+  });
+
+  reconciler.updateContainer(element, container, null, () => undefined);
+
+  return () => {
+    unsubscribe?.();
+    reconciler.updateContainer(null, container, null, () => undefined);
+  };
+}
+
+export interface GlobalStyleSheetProps {
+  id: string;
+  children: string;
+}
+
+export function GlobalStyleSheet({ id, children }: GlobalStyleSheetProps): null {
+  React.useInsertionEffect(() => {
+    setGlobalStyleSheet(id, children);
+    return () => removeGlobalStyleSheet(id);
+  }, [id, children]);
+
+  return null;
+}
 
 /**
  * 带副作用管理的自定义 useEffect

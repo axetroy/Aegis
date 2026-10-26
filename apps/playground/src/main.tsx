@@ -6,6 +6,8 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Container } from '@aegis/container';
+import { AegisDOMRenderer } from '@aegis/renderer';
 import { View, Text, Button } from '@aegis/ui';
 
 // 计数器应用
@@ -128,9 +130,80 @@ function ThemeApp() {
   );
 }
 
+function ContainerCounterApp() {
+  const renderTarget = React.useRef<HTMLDivElement>(null);
+  const [status, setStatus] = React.useState('正在加载应用包...');
+
+  React.useEffect(() => {
+    let disposed = false;
+    let appContainer: Container | undefined;
+    let renderer: AegisDOMRenderer | undefined;
+    let unsubscribe: (() => void) | undefined;
+
+    const start = async () => {
+      try {
+        const response = await fetch('/counter-app.aegis');
+        if (!response.ok) throw new Error(`加载应用包失败 (${response.status})`);
+
+        const nextContainer = await Container.fromPackage(await response.blob());
+        if (disposed) {
+          await nextContainer.destroy();
+          return;
+        }
+        appContainer = nextContainer;
+        const target = renderTarget.current;
+        if (!target) throw new Error('找不到应用渲染容器');
+
+        renderer = new AegisDOMRenderer({
+          container: target,
+          appId: appContainer.appId,
+          onEvent: (message) => {
+            appContainer?.postMessage({ type: 'protocol', payload: message });
+          },
+        });
+
+        unsubscribe = appContainer.onMessage((message) => {
+          if (message.type === 'protocol' && typeof message.payload === 'object' && message.payload !== null) {
+            const inner = message.payload as { type?: unknown; payload?: unknown };
+            if (typeof inner.type === 'string') {
+              renderer?.handleMessage({
+                type: inner.type,
+                payload: (inner.payload ?? {}) as Record<string, unknown>,
+              });
+            }
+          } else if (message.type === '__aegis_error') {
+            setStatus(`应用运行失败: ${String((message.payload as { message?: unknown })?.message ?? '未知错误')}`);
+          }
+        });
+
+        await appContainer.initialize();
+        if (!disposed) setStatus(`运行中 · ${appContainer.manifest.name}`);
+      } catch (error) {
+        if (!disposed) setStatus(`加载失败: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    };
+
+    void start();
+
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+      renderer?.destroy();
+      void appContainer?.destroy();
+    };
+  }, []);
+
+  return (
+    <View style={{ padding: 16, backgroundColor: '#f3f6f4', borderRadius: 8 }}>
+      <Text style={{ fontSize: 13, color: '#64716e', marginBottom: 12 }}>{status}</Text>
+      <div ref={renderTarget} style={{ minHeight: 240, display: 'flex', justifyContent: 'center' }} />
+    </View>
+  );
+}
+
 // 主应用
 function App() {
-  const [currentApp, setCurrentApp] = React.useState<'counter' | 'theme'>('counter');
+  const [currentApp, setCurrentApp] = React.useState<'counter' | 'theme' | 'container'>('container');
 
   return (
     <View
@@ -169,10 +242,26 @@ function App() {
         >
           主题
         </Button>
+
+        <Button
+          onClick={() => setCurrentApp('container')}
+          style={{
+            backgroundColor: currentApp === 'container' ? '#167c68' : '#e5e5ea',
+            color: currentApp === 'container' ? '#ffffff' : '#000000',
+          }}
+        >
+          容器运行
+        </Button>
       </View>
 
       {/* 当前应用 */}
-      {currentApp === 'counter' ? <CounterApp /> : <ThemeApp />}
+      {currentApp === 'counter' ? (
+        <CounterApp />
+      ) : currentApp === 'theme' ? (
+        <ThemeApp />
+      ) : (
+        <ContainerCounterApp />
+      )}
     </View>
   );
 }

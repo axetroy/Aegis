@@ -11,6 +11,7 @@ import {
   type NodeType,
   generateId,
 } from '@aegis/protocol';
+import { isSafeCssValue, sanitizeStyleSheet } from './style-sheet-policy';
 
 // 节点映射
 interface NodeMap {
@@ -20,22 +21,70 @@ interface NodeMap {
   };
 }
 
+function cssPropertyName(property: string): string {
+  if (property.startsWith('--')) return property;
+  const cssProperty = property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+  return cssProperty.startsWith('ms-') ? `-${cssProperty}` : cssProperty;
+}
+
+function cssStyleValue(property: string, value: number | string): string {
+  if (typeof value !== 'number' || value === 0 || property.startsWith('--')) return String(value);
+
+  const css = globalThis.CSS;
+  if (typeof css?.supports !== 'function') return String(value);
+
+  const rawValue = String(value);
+  if (css.supports(property, rawValue)) return rawValue;
+
+  const pixelValue = `${rawValue}px`;
+  return css.supports(property, pixelValue) ? pixelValue : rawValue;
+}
+
+function containsCssUrl(value: string): boolean {
+  const normalized = value
+    .replace(/\\([\da-f]{1,6}\s?|[^\r\n])/gi, (_match, escaped: string) => {
+      const hex = escaped.trim();
+      if (!/^[\da-f]{1,6}$/i.test(hex)) return escaped;
+      const codePoint = Number.parseInt(hex, 16);
+      return String.fromCodePoint(codePoint === 0 || codePoint > 0x10ffff ? 0xfffd : codePoint);
+    })
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+
+  return /(?:url|(?:-webkit-)?image-set)\s*\(/i.test(normalized);
+}
+
 // 渲染器配置
 export interface RendererConfig {
   container: HTMLElement;
   appId: string;
+  onEvent?: (message: { type: string; payload: unknown }) => void;
 }
+
+const MAX_STYLESHEETS = 32;
+const MAX_STYLESHEET_LENGTH = 64 * 1024;
+const MAX_THEME_VARIABLES = 128;
+const MAX_THEME_VALUE_LENGTH = 4096;
 
 // DOM 渲染器类
 export class AegisDOMRenderer {
   private config: RendererConfig;
+  public readonly shadowRoot: ShadowRoot;
   private nodes: NodeMap = {};
   private rootId: string;
   private eventHandlers: Map<string, (event: Event) => void> = new Map();
+  private defaultStyles = new WeakMap<HTMLElement, Map<string, string>>();
+  private styleSheets = new Map<string, HTMLStyleElement>();
+  private themeVariables = new Map<string, string>();
+  private rootElement!: HTMLElement;
+  private messageHandler: (event: MessageEvent) => void;
 
   constructor(config: RendererConfig) {
     this.config = config;
     this.rootId = `aegis-root-${config.appId}`;
+    this.shadowRoot = config.container.shadowRoot ?? config.container.attachShadow({ mode: 'open' });
+    this.messageHandler = (event) => {
+      if (event.data && event.data.type) this.handleMessage(event.data);
+    };
     this.setupMessageHandler();
     this.createRoot();
   }
@@ -43,10 +92,13 @@ export class AegisDOMRenderer {
   // 创建根节点
   private createRoot(): void {
     const root = document.createElement('div');
+    this.rootElement = root;
     root.id = this.rootId;
     root.setAttribute('data-aegis-app', this.config.appId);
-    root.style.cssText = 'display: flex; flex-direction: column; width: 100%; height: 100%;';
-    this.config.container.appendChild(root);
+    root.style.cssText =
+      'display: flex; flex-direction: column; width: 100%; height: 100%; isolation: isolate; contain: layout paint;';
+    this.applyThemeVariables(root);
+    this.shadowRoot.appendChild(root);
 
     // 注册根节点
     this.nodes[this.rootId] = {
@@ -57,12 +109,7 @@ export class AegisDOMRenderer {
 
   // 设置消息处理
   private setupMessageHandler(): void {
-    // 监听来自 Worker 的消息
-    window.addEventListener('message', (event) => {
-      if (event.data && event.data.type) {
-        this.handleMessage(event.data);
-      }
-    });
+    window.addEventListener('message', this.messageHandler);
   }
 
   // 处理消息（公开方法用于测试）
@@ -86,7 +133,66 @@ export class AegisDOMRenderer {
       case UIMessageType.SyncTree:
         this.syncTree(message.payload as unknown as { root: NodeProps; nodes: Record<string, NodeProps> });
         break;
+      case UIMessageType.SetGlobalStyleSheet:
+        this.setGlobalStyleSheet(message.payload as { styleSheetId: string; cssText: string });
+        break;
+      case UIMessageType.RemoveGlobalStyleSheet:
+        this.removeGlobalStyleSheet(message.payload as { styleSheetId: string });
+        break;
+      case UIMessageType.SetThemeVariables:
+        this.setThemeVariables(message.payload as { variables: Record<string, string | number | null> });
+        break;
     }
+  }
+
+  private setGlobalStyleSheet(payload: { styleSheetId: string; cssText: string }): void {
+    const { styleSheetId, cssText } = payload;
+    if (typeof styleSheetId !== 'string' || !styleSheetId || styleSheetId.length > 128) return;
+    if (typeof cssText !== 'string' || cssText.length > MAX_STYLESHEET_LENGTH) return;
+
+    let styleElement = this.styleSheets.get(styleSheetId);
+    if (!styleElement && this.styleSheets.size >= MAX_STYLESHEETS) return;
+
+    try {
+      const safeCss = sanitizeStyleSheet(cssText);
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.dataset['aegisStylesheet'] = styleSheetId;
+        this.styleSheets.set(styleSheetId, styleElement);
+        this.shadowRoot.appendChild(styleElement);
+      }
+      styleElement.textContent = safeCss;
+    } catch (error) {
+      console.warn('[Aegis] Rejected global stylesheet:', error);
+    }
+  }
+
+  private removeGlobalStyleSheet(payload: { styleSheetId: string }): void {
+    if (typeof payload.styleSheetId !== 'string') return;
+    this.styleSheets.get(payload.styleSheetId)?.remove();
+    this.styleSheets.delete(payload.styleSheetId);
+  }
+
+  private setThemeVariables(payload: { variables: Record<string, string | number | null> }): void {
+    if (!payload.variables || typeof payload.variables !== 'object' || Array.isArray(payload.variables)) return;
+
+    for (const [name, value] of Object.entries(payload.variables)) {
+      if (!name.startsWith('--')) continue;
+      if (value === null) {
+        this.themeVariables.delete(name);
+        this.rootElement.style.removeProperty(name);
+      } else if (isSafeCssValue(String(value))) {
+        const cssValue = String(value);
+        if (cssValue.length > MAX_THEME_VALUE_LENGTH) continue;
+        if (!this.themeVariables.has(name) && this.themeVariables.size >= MAX_THEME_VARIABLES) continue;
+        this.themeVariables.set(name, cssValue);
+        this.rootElement.style.setProperty(name, cssValue);
+      }
+    }
+  }
+
+  private applyThemeVariables(element: HTMLElement): void {
+    for (const [name, value] of this.themeVariables) element.style.setProperty(name, value);
   }
 
   // 创建节点
@@ -153,6 +259,13 @@ export class AegisDOMRenderer {
         element = document.createElement('div');
     }
 
+    const defaults = new Map<string, string>();
+    for (let index = 0; index < element.style.length; index += 1) {
+      const property = element.style.item(index);
+      defaults.set(property, element.style.getPropertyValue(property));
+    }
+    this.defaultStyles.set(element, defaults);
+
     // 应用样式
     this.applyStyles(element, props);
 
@@ -160,25 +273,43 @@ export class AegisDOMRenderer {
   }
 
   // 应用样式
-  private applyStyles(element: HTMLElement, props: Record<string, unknown>): void {
-    const style = (props['style'] as Record<string, unknown>) || {};
-    const styleValue = (key: string): string =>
-      typeof style[key] === 'number' ? `${style[key]}px` : String(style[key] ?? '');
+  private applyStyles(
+    element: HTMLElement,
+    props: Record<string, unknown>,
+    previousStyle?: unknown,
+  ): void {
+    const style = this.asStyleRecord(props['style']);
+    const oldStyle = this.asStyleRecord(previousStyle);
+    const nextProperties = new Set(Object.keys(style).map(cssPropertyName));
 
-    if (style['display']) element.style.display = styleValue('display');
-    if (style['flexDirection']) element.style.flexDirection = styleValue('flexDirection');
-    if (style['justifyContent']) element.style.justifyContent = styleValue('justifyContent');
-    if (style['alignItems']) element.style.alignItems = styleValue('alignItems');
-    if (style['width']) element.style.width = styleValue('width');
-    if (style['height']) element.style.height = styleValue('height');
-    if (style['padding']) element.style.padding = styleValue('padding');
-    if (style['margin']) element.style.margin = styleValue('margin');
-    if (style['backgroundColor']) element.style.backgroundColor = styleValue('backgroundColor');
-    if (style['borderRadius']) element.style.borderRadius = styleValue('borderRadius');
-    if (style['opacity']) element.style.opacity = styleValue('opacity');
-    if (style['fontSize']) element.style.fontSize = styleValue('fontSize');
-    if (style['color']) element.style.color = styleValue('color');
-    if (style['textAlign']) element.style.textAlign = styleValue('textAlign');
+    for (const property of Object.keys(oldStyle).map(cssPropertyName)) {
+      if (nextProperties.has(property)) continue;
+      const defaultValue = this.defaultStyles.get(element)?.get(property);
+      if (defaultValue === undefined) element.style.removeProperty(property);
+      else element.style.setProperty(property, defaultValue);
+    }
+
+    for (const [property, value] of Object.entries(style)) {
+      const cssProperty = cssPropertyName(property);
+      if (typeof value !== 'string' && typeof value !== 'number') {
+        element.style.removeProperty(cssProperty);
+        continue;
+      }
+
+      const cssValue = cssStyleValue(cssProperty, value);
+      if (containsCssUrl(cssValue)) {
+        element.style.removeProperty(cssProperty);
+        continue;
+      }
+
+      element.style.setProperty(cssProperty, cssValue);
+    }
+  }
+
+  private asStyleRecord(value: unknown): Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
   }
 
   // 添加事件监听
@@ -219,8 +350,8 @@ export class AegisDOMRenderer {
       },
     };
 
-    // 发送到 Worker
-    window.postMessage(message);
+    if (this.config.onEvent) this.config.onEvent(message);
+    else window.postMessage(message);
   }
 
   // 更新节点
@@ -229,10 +360,11 @@ export class AegisDOMRenderer {
     const node = this.nodes[id];
 
     if (node) {
+      const previousStyle = node.props['style'];
       Object.assign(node.props, props);
 
       // 更新样式
-      this.applyStyles(node.dom, node.props);
+      this.applyStyles(node.dom, node.props, previousStyle);
 
       // 更新文本内容
       if (props['value'] !== undefined) {
@@ -298,16 +430,26 @@ export class AegisDOMRenderer {
   private syncTree(payload: { root: NodeProps; nodes: Record<string, NodeProps> }): void {
     const { root, nodes } = payload;
 
+    for (const [id, node] of Object.entries(this.nodes)) {
+      const clickHandler = this.eventHandlers.get(`${id}-click`);
+      const inputHandler = this.eventHandlers.get(`${id}-input`);
+      if (clickHandler) node.dom.removeEventListener('click', clickHandler);
+      if (inputHandler) node.dom.removeEventListener('input', inputHandler);
+    }
+    this.eventHandlers.clear();
+
     // 清空现有内容
-    this.config.container.innerHTML = '';
     this.nodes = {};
 
     // 创建根容器
     const rootContainer = document.createElement('div');
+    this.rootElement.replaceWith(rootContainer);
+    this.rootElement = rootContainer;
     rootContainer.id = this.rootId;
     rootContainer.setAttribute('data-aegis-app', this.config.appId);
-    rootContainer.style.cssText = 'display: flex; flex-direction: column; width: 100%; height: 100%;';
-    this.config.container.appendChild(rootContainer);
+    rootContainer.style.cssText =
+      'display: flex; flex-direction: column; width: 100%; height: 100%; isolation: isolate; contain: layout paint;';
+    this.applyThemeVariables(rootContainer);
 
     // 注册根容器
     this.nodes[this.rootId] = {
@@ -315,24 +457,19 @@ export class AegisDOMRenderer {
       props: {},
     };
 
-    // 创建根节点并直接添加到容器
-    const rootDom = this.createElement(root.type, root.props);
-    rootDom.id = root.id;
-    this.nodes[root.id] = { dom: rootDom, props: root.props };
-    rootContainer.appendChild(rootDom);
-
-    // 递归创建子节点并添加到根节点
-    if (root.children) {
-      root.children.forEach((childId) => {
+    const createTreeNode = (nodeProps: NodeProps): HTMLElement => {
+      const dom = this.createElement(nodeProps.type, nodeProps.props);
+      dom.id = nodeProps.id;
+      this.nodes[nodeProps.id] = { dom, props: nodeProps.props };
+      this.addEventListeners(nodeProps.id, dom, nodeProps.props);
+      for (const childId of nodeProps.children ?? []) {
         const childProps = nodes[childId];
-        if (childProps) {
-          const childDom = this.createElement(childProps.type, childProps.props);
-          childDom.id = childId;
-          this.nodes[childId] = { dom: childDom, props: childProps.props };
-          rootDom.appendChild(childDom);
-        }
-      });
-    }
+        if (childProps) dom.appendChild(createTreeNode(childProps));
+      }
+      return dom;
+    };
+
+    rootContainer.appendChild(createTreeNode(root));
   }
 
   // 从树创建节点
@@ -374,7 +511,11 @@ export class AegisDOMRenderer {
 
   // 销毁渲染器
   destroy(): void {
-    this.config.container.innerHTML = '';
+    window.removeEventListener('message', this.messageHandler);
+    for (const id of Object.keys(this.nodes)) this.removeEventListeners(id);
+    for (const styleElement of this.styleSheets.values()) styleElement.remove();
+    this.styleSheets.clear();
+    this.rootElement.remove();
     this.nodes = {};
     this.eventHandlers.clear();
   }

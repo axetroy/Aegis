@@ -25,6 +25,7 @@
     "clean": "rm -rf dist dist-test"
   },
   "dependencies": {
+    "@aegis/adapter": "workspace:*",
     "@aegis/protocol": "workspace:*",
     "@aegis/security": "workspace:*",
     "@aegis/runtime": "workspace:*"

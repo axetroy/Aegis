@@ -67,7 +67,8 @@ aegis/
 │
 ├── apps/
 │   ├── host/           # 宿主环境
-│   └── playground/     # 演示应用
+│   ├── playground/     # 演示宿主与容器
+│   └── counter-app/    # 容器内运行的计数器示例
 │
 ├── tests/              # 集成测试与基准测试
 └── .github/workflows/  # CI 配置
@@ -87,7 +88,7 @@ pnpm install
 # 启动宿主环境
 pnpm --filter @aegis/host dev
 
-# 启动演示应用
+# 启动容器示例（自动构建 .aegis 包）
 pnpm --filter @aegis/playground dev
 ```
 

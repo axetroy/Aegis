@@ -49,6 +49,9 @@ export enum UIMessageType {
   InsertNode = 'ui:insert-node',
   MoveNode = 'ui:move-node',
   SyncTree = 'ui:sync-tree',
+  SetGlobalStyleSheet = 'ui:set-global-stylesheet',
+  RemoveGlobalStyleSheet = 'ui:remove-global-stylesheet',
+  SetThemeVariables = 'ui:set-theme-variables',
 
   // Host -> Worker
   NodeCreated = 'ui:node-created',
@@ -111,6 +114,28 @@ export interface SyncTreeMessage extends BaseMessage {
   };
 }
 
+export interface SetGlobalStyleSheetMessage extends BaseMessage {
+  type: UIMessageType.SetGlobalStyleSheet;
+  payload: {
+    styleSheetId: string;
+    cssText: string;
+  };
+}
+
+export interface RemoveGlobalStyleSheetMessage extends BaseMessage {
+  type: UIMessageType.RemoveGlobalStyleSheet;
+  payload: {
+    styleSheetId: string;
+  };
+}
+
+export interface SetThemeVariablesMessage extends BaseMessage {
+  type: UIMessageType.SetThemeVariables;
+  payload: {
+    variables: Record<string, string | number | null>;
+  };
+}
+
 // Host -> Worker 消息
 export interface NodeCreatedMessage extends BaseMessage {
   type: UIMessageType.NodeCreated;
@@ -155,6 +180,9 @@ export type UIMessage =
   | InsertNodeMessage
   | MoveNodeMessage
   | SyncTreeMessage
+  | SetGlobalStyleSheetMessage
+  | RemoveGlobalStyleSheetMessage
+  | SetThemeVariablesMessage
   | NodeCreatedMessage
   | NodeUpdatedMessage
   | NodeDeletedMessage

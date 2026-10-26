@@ -25,3 +25,32 @@ function App() {
   );
 }
 ```
+
+## 全局样式
+
+`GlobalStyleSheet` 在当前应用的 Shadow Root 内注册 CSS；样式不会影响宿主或其他应用。组件卸载或 `id` 变化时会清理旧样式表。
+
+```tsx
+import { useEffect } from 'react';
+import { GlobalStyleSheet, setThemeVariables } from '@aegis/react';
+
+function App() {
+  useEffect(() => {
+    setThemeVariables({ '
+    --brand-color': '#157f6b' });
+  }, []);
+
+  return (
+    <>
+      <GlobalStyleSheet id="app-base">{`
+        .button { background: var(--brand-color); }
+        .button:hover { opacity: 0.85; }
+        @media (max-width: 600px) { .panel { padding: 12px; } }
+      `}</GlobalStyleSheet>
+      <Panel />
+    </>
+  );
+}
+```
+
+支持选择器、伪类、媒体查询和 keyframes。出于隔离与资源安全，`@import`、`@font-face`、`:host`、`::slotted`、`url()`、`image-set()` 和 `paint()` 会被拒绝；单张样式表上限为 64 KiB，每个应用最多 32 张。

@@ -6,6 +6,98 @@
 
 import { NodeType, generateId, createMessage, UIMessageType } from '@aegis/protocol';
 
+interface RootContainerInfo {
+  appId: string;
+  children: string[];
+}
+
+interface AegisProtocol {
+  sendMessage(type: string, payload?: unknown): void;
+}
+
+const instances = new Map<string, AegisInstance>();
+const eventHandlers = new Map<string, (data?: unknown) => void>();
+
+function sendMessage(type: string, payload: Record<string, unknown>): void {
+  const protocol = (self as unknown as { __aegis_protocol?: AegisProtocol }).__aegis_protocol;
+  if (protocol) {
+    protocol.sendMessage(type, payload);
+  } else {
+    self.postMessage(createMessage(type, payload));
+  }
+}
+
+export function setGlobalStyleSheet(styleSheetId: string, cssText: string): void {
+  if (!styleSheetId || styleSheetId.length > 128) {
+    throw new Error('Global stylesheet id must contain 1 to 128 characters');
+  }
+  if (cssText.length > 64 * 1024) {
+    throw new Error('Global stylesheet exceeds the 64 KB limit');
+  }
+
+  sendMessage(UIMessageType.SetGlobalStyleSheet, { styleSheetId, cssText });
+}
+
+export function removeGlobalStyleSheet(styleSheetId: string): void {
+  sendMessage(UIMessageType.RemoveGlobalStyleSheet, { styleSheetId });
+}
+
+export function setThemeVariables(variables: Record<string, string | number | null>): void {
+  for (const [name, value] of Object.entries(variables)) {
+    if (!name.startsWith('--')) throw new Error(`Theme variable must start with --: ${name}`);
+    if (typeof value === 'string' && !isSafeThemeValue(value)) {
+      throw new Error(`Theme variable contains a forbidden CSS resource: ${name}`);
+    }
+  }
+
+  sendMessage(UIMessageType.SetThemeVariables, { variables });
+}
+
+function isSafeThemeValue(value: string): boolean {
+  return !/(?:url|(?:-webkit-)?image-set|paint)\s*\(/i.test(value);
+}
+
+function toProtocolValue(value: unknown): unknown {
+  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) return value.map(toProtocolValue).filter((item) => item !== undefined);
+  if (typeof value !== 'object' || '$$typeof' in value) return undefined;
+
+  const result: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    const safeValue = toProtocolValue(item);
+    if (safeValue !== undefined) result[key] = safeValue;
+  }
+  return result;
+}
+
+function serializableProps(instance: AegisInstance): Record<string, unknown> {
+  const props: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(instance.props)) {
+    if (key === 'children') continue;
+    if (key === 'onClick' && typeof value === 'function') {
+      const handlerId = `${instance.id}-click`;
+      eventHandlers.set(handlerId, value as (data?: unknown) => void);
+      props[key] = handlerId;
+    } else if (key === 'onChangeText' && typeof value === 'function') {
+      const handlerId = `${instance.id}-input`;
+      eventHandlers.set(handlerId, value as (data?: unknown) => void);
+      props[key] = handlerId;
+    } else {
+      const safeValue = toProtocolValue(value);
+      if (safeValue !== undefined) props[key] = safeValue;
+    }
+  }
+  return props;
+}
+
+export function dispatchAegisEvent(payload: unknown): void {
+  if (typeof payload !== 'object' || payload === null || !('handlerId' in payload)) return;
+  const handlerId = String(payload.handlerId);
+  const handler = eventHandlers.get(handlerId);
+  if (handler) handler('data' in payload ? payload.data : undefined);
+}
 
 // Aegis 实例类型
 export interface AegisInstance {
@@ -24,13 +116,20 @@ const NODE_TYPE_MAP: Record<string, NodeType> = {
   Button: NodeType.Button,
   Input: NodeType.Input,
   'scroll-view': NodeType.ScrollView,
+  div: NodeType.View,
+  span: NodeType.Text,
+  button: NodeType.Button,
+  input: NodeType.Input,
+  p: NodeType.Text,
+  h1: NodeType.Text,
+  h2: NodeType.Text,
+  h3: NodeType.Text,
 };
 
 // 创建实例
 export function createInstance(type: string, props: Record<string, unknown>): AegisInstance {
   const nodeType = NODE_TYPE_MAP[type] || NodeType.View;
-
-  return {
+  const instance: AegisInstance = {
     id: generateId(),
     type: nodeType,
     props: {
@@ -39,11 +138,13 @@ export function createInstance(type: string, props: Record<string, unknown>): Ae
     },
     children: [],
   };
+  instances.set(instance.id, instance);
+  return instance;
 }
 
 // 创建文本实例
 export function createTextInstance(text: string): AegisInstance {
-  return {
+  const instance: AegisInstance = {
     id: generateId(),
     type: NodeType.Text,
     props: {
@@ -51,21 +152,26 @@ export function createTextInstance(text: string): AegisInstance {
     },
     children: [],
   };
+  instances.set(instance.id, instance);
+  return instance;
 }
 
 // 追加子节点
 export function appendInitialChild(parent: AegisInstance, child: AegisInstance): void {
   parent.children.push(child.id);
+  child.parent = parent;
 }
 
 // 插入子节点
 export function insertBefore(parent: AegisInstance, child: AegisInstance, beforeChild: AegisInstance): void {
+  if (child.parent) removeChild(child.parent, child);
   const index = parent.children.indexOf(beforeChild.id);
   if (index !== -1) {
     parent.children.splice(index, 0, child.id);
   } else {
     parent.children.push(child.id);
   }
+  child.parent = parent;
 }
 
 // 移除子节点
@@ -74,7 +180,66 @@ export function removeChild(parent: AegisInstance, child: AegisInstance): void {
   if (index !== -1) {
     parent.children.splice(index, 1);
   }
+  child.parent = null;
 }
+
+export function appendChild(parent: AegisInstance, child: AegisInstance): void {
+  if (child.parent) removeChild(child.parent, child);
+  parent.children.push(child.id);
+  child.parent = parent;
+}
+
+export function appendChildToContainer(container: RootContainerInfo, child: AegisInstance): void {
+  if (child.parent) removeChild(child.parent, child);
+  container.children.push(child.id);
+  child.parent = null;
+}
+
+export function insertInContainerBefore(
+  container: RootContainerInfo,
+  child: AegisInstance,
+  beforeChild: AegisInstance,
+): void {
+  const index = container.children.indexOf(beforeChild.id);
+  if (index === -1) container.children.push(child.id);
+  else container.children.splice(index, 0, child.id);
+  child.parent = null;
+}
+
+export function removeChildFromContainer(container: RootContainerInfo, child: AegisInstance): void {
+  const index = container.children.indexOf(child.id);
+  if (index !== -1) container.children.splice(index, 1);
+  child.parent = null;
+}
+
+export function resetAfterCommit(container: RootContainerInfo): void {
+  const nodes: Record<string, { id: string; type: NodeType; props: Record<string, unknown>; children: string[] }> = {};
+  eventHandlers.clear();
+
+  const collect = (id: string): void => {
+    const instance = instances.get(id);
+    if (!instance) return;
+    nodes[id] = {
+      id,
+      type: instance.type,
+      props: serializableProps(instance),
+      children: instance.children,
+    };
+    for (const childId of instance.children) collect(childId);
+  };
+
+  for (const id of container.children) collect(id);
+  sendMessage(UIMessageType.SyncTree, {
+    root: { id: 'root', type: NodeType.View, props: {}, children: container.children },
+    nodes,
+  });
+}
+
+export function clearContainer(container: RootContainerInfo): void {
+  container.children = [];
+}
+
+export const supportsMutation = true;
 
 // 最终化属性
 export function finalizeInitialChildren(
@@ -82,8 +247,7 @@ export function finalizeInitialChildren(
   _type: string,
   _props: Record<string, unknown>
 ): boolean {
-  // 返回 true 表示需要提交更新
-  return true;
+  return false;
 }
 
 // 深度比较两个值
@@ -140,52 +304,47 @@ export function prepareUpdate(
 // 提交更新
 export function commitUpdate(
   instance: AegisInstance,
-  updatePayload: Record<string, unknown>
+  typeOrPayload: string | Record<string, unknown>,
+  _oldProps?: Record<string, unknown>,
+  newProps?: Record<string, unknown>,
 ): void {
+  const updatePayload = newProps ?? (typeof typeOrPayload === 'string' ? {} : typeOrPayload);
   // 合并更新到 instance
   Object.assign(instance.props, updatePayload);
 
   // 发送更新消息
-  const message = createMessage(UIMessageType.UpdateNode, {
+  sendMessage(UIMessageType.UpdateNode, {
     id: instance.id,
-    props: updatePayload,
+    props: serializableProps(instance),
   });
-
-  // 通过 postMessage 发送到 Host
-  self.postMessage(message);
 }
 
 // 提交文本更新
-export function commitTextUpdate(instance: AegisInstance, text: string): void {
+export function commitTextUpdate(instance: AegisInstance, _oldText: string, text: string): void {
   instance.props['value'] = text;
 
-  const message = createMessage(UIMessageType.UpdateNode, {
+  sendMessage(UIMessageType.UpdateNode, {
     id: instance.id,
     props: { value: text },
   });
-
-  self.postMessage(message);
 }
 
 // 提交挂载
 export function commitMount(instance: AegisInstance): void {
-  const message = createMessage(UIMessageType.CreateNode, {
+  sendMessage(UIMessageType.CreateNode, {
     id: instance.id,
     type: instance.type,
-    props: instance.props,
+    props: serializableProps(instance),
     children: instance.children,
+    parentId: instance.parent?.id,
   });
-
-  self.postMessage(message);
 }
 
 // 提交卸载
 export function commitUnmount(instance: AegisInstance): void {
-  const message = createMessage(UIMessageType.DeleteNode, {
+  sendMessage(UIMessageType.DeleteNode, {
     id: instance.id,
   });
-
-  self.postMessage(message);
 }
 
 // 获取父节点
@@ -245,3 +404,65 @@ export const supportsPersistence = false;
 
 // 是否支持作用域协调
 export const supportsHydration = false;
+
+export function resolveUpdatePriority(): number {
+  return 2;
+}
+
+export function getCurrentUpdatePriority(): number {
+  return 2;
+}
+
+export function setCurrentUpdatePriority(_priority: number): void {}
+
+export function shouldSetTextContent(_type: string, _props: Record<string, unknown>): boolean {
+  return false;
+}
+
+export function getRootHostContext(): null {
+  return null;
+}
+
+export function getChildHostContext(): null {
+  return null;
+}
+
+export function getPublicInstance(instance: unknown): unknown {
+  return instance;
+}
+
+export function prepareForCommit(): null {
+  return null;
+}
+
+export function getInstanceFromNode(): null {
+  return null;
+}
+
+export function getInstanceFromScope(): null {
+  return null;
+}
+
+export function detachDeletedInstance(): void {}
+
+export function maySuspendCommit(): boolean {
+  return false;
+}
+
+export function preloadInstance(): boolean {
+  return true;
+}
+
+export function startSuspendingCommit(): void {}
+
+export function suspendInstance(): void {}
+
+export function waitForCommitToBeReady(): null {
+  return null;
+}
+
+export const DefaultEventPriority = 2;
+export const DiscreteEventPriority = 1;
+export const ContinuousEventPriority = 4;
+export const bindToConsole = undefined;
+export const extraDevToolsConfig = undefined;

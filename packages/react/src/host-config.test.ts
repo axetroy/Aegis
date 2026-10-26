@@ -15,6 +15,9 @@ import {
   commitTextUpdate,
   commitMount,
   commitUnmount,
+  setGlobalStyleSheet,
+  removeGlobalStyleSheet,
+  setThemeVariables,
   getTextContent,
   isTextInstance,
   scheduleTimeout,
@@ -30,7 +33,6 @@ import { NodeType, UIMessageType } from '@aegis/protocol';
 
 // Mock postMessage
 const mockPostMessage = vi.fn();
-
 
 function getLastCall(): Record<string, unknown>[] {
   const calls = mockPostMessage.mock.calls;
@@ -62,6 +64,38 @@ Object.defineProperty(globalThis, 'self', {
 describe('@aegis/react/host-config', () => {
   beforeEach(() => {
     mockPostMessage.mockClear();
+  });
+
+  describe('global styles', () => {
+    it('should send stylesheet updates and removals through the UI protocol', () => {
+      setGlobalStyleSheet('base', '.card { color: red; }');
+      expect(getLastCall()[0]['type']).toBe(UIMessageType.SetGlobalStyleSheet);
+      expect(getLastCall()[0]['payload']).toEqual({
+        styleSheetId: 'base',
+        cssText: '.card { color: red; }',
+      });
+
+      removeGlobalStyleSheet('base');
+      expect(getLastCall()[0]['type']).toBe(UIMessageType.RemoveGlobalStyleSheet);
+      expect(getLastCall()[0]['payload']).toEqual({ styleSheetId: 'base' });
+    });
+
+    it('should send theme variable patches and allow removal', () => {
+      setThemeVariables({ '--brand-color': '#157f6b', '--surface': null });
+
+      expect(getLastCall()[0]['type']).toBe(UIMessageType.SetThemeVariables);
+      expect(getLastCall()[0]['payload']).toEqual({
+        variables: { '--brand-color': '#157f6b', '--surface': null },
+      });
+    });
+
+    it('should reject invalid theme variables and excessive stylesheets', () => {
+      expect(() => setThemeVariables({ color: 'red' })).toThrow('must start with --');
+      expect(() => setThemeVariables({ '--image': 'url(https://example.com/a.png)' })).toThrow(
+        'forbidden CSS resource',
+      );
+      expect(() => setGlobalStyleSheet('base', 'x'.repeat(64 * 1024 + 1))).toThrow('64 KB limit');
+    });
   });
 
   describe('createInstance', () => {
@@ -194,10 +228,10 @@ describe('@aegis/react/host-config', () => {
   });
 
   describe('finalizeInitialChildren', () => {
-    it('should return true', () => {
+    it('should return false', () => {
       const instance = makeInstance();
       const result = finalizeInitialChildren(instance, 'View', { style: {} });
-      expect(result).toBe(true);
+      expect(result).toBe(false);
     });
   });
 
@@ -266,7 +300,7 @@ describe('@aegis/react/host-config', () => {
     it('should update text instance', () => {
       const instance = makeInstance({ id: 'text-1', props: { value: 'old' } });
 
-      commitTextUpdate(instance, 'new');
+      commitTextUpdate(instance, 'old', 'new');
 
       expect(instance.props.value).toBe('new');
     });
@@ -274,7 +308,7 @@ describe('@aegis/react/host-config', () => {
     it('should send update message', () => {
       const instance = makeInstance({ id: 'text-1', props: { value: 'old' } });
 
-      commitTextUpdate(instance, 'new');
+      commitTextUpdate(instance, 'old', 'new');
 
       expect(mockPostMessage).toHaveBeenCalled();
       const lastCall = getLastCall();

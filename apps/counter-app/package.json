@@ -1,0 +1,23 @@
+{
+  "name": "@aegis/counter-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Counter demo app running inside an Aegis container",
+  "type": "module",
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aegis/packager": "workspace:*",
+    "@aegis/react": "workspace:*",
+    "@aegis/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "esbuild": "^0.28.0",
+    "react": "^19.3.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  }
+}

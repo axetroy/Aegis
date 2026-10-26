@@ -5,14 +5,15 @@
   "description": "Aegis Playground - Demo Application",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "pnpm --filter @aegis/counter-app build && vite",
+    "build": "pnpm --filter @aegis/counter-app build && tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix"
   },
   "dependencies": {
+    "@aegis/container": "workspace:*",
     "@aegis/protocol": "workspace:*",
     "@aegis/react": "workspace:*",
     "@aegis/renderer": "workspace:*",
