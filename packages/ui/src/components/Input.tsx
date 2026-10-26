@@ -12,6 +12,7 @@ export interface InputProps {
   };
   value?: string;
   placeholder?: string;
+  name?: string;
   onChangeText?: (text: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
@@ -26,6 +27,7 @@ export const Input: React.FC<InputProps> = ({
   style,
   value,
   placeholder,
+  name,
   onChangeText,
   onFocus,
   onBlur,
@@ -34,8 +36,9 @@ export const Input: React.FC<InputProps> = ({
   disabled = false,
   autoFocus = false,
 }) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChangeText?.(e.target.value);
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement> | { value?: unknown }) => {
+    const value = 'target' in event ? event.target.value : event.value;
+    if (typeof value === 'string') onChangeText?.(value);
   };
 
   const inputType = secureTextEntry ? 'password' : keyboardType === 'numeric' ? 'number' : 'text';
@@ -46,6 +49,7 @@ export const Input: React.FC<InputProps> = ({
       type={inputType}
       value={value}
       placeholder={placeholder}
+      name={name}
       onChange={handleChange}
       onFocus={onFocus}
       onBlur={onBlur}

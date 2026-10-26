@@ -50,7 +50,7 @@ describe('Form Component', () => {
         <input name="username" defaultValue="admin" />
         <input name="password" defaultValue="secret" />
         <button type="submit">提交</button>
-      </Form>
+      </Form>,
     );
     fireEvent.click(screen.getByText('提交'));
     expect(handleSubmit).toHaveBeenCalledWith({ username: 'admin', password: 'secret' });
@@ -62,7 +62,7 @@ describe('ScrollView Component', () => {
     render(
       <ScrollView>
         <div data-testid="content">Content</div>
-      </ScrollView>
+      </ScrollView>,
     );
     expect(document.body.contains(screen.getByTestId('content'))).toBe(true);
   });
@@ -70,12 +70,18 @@ describe('ScrollView Component', () => {
   it('onScroll 事件应触发', () => {
     const handleScroll = vi.fn();
     render(<ScrollView onScroll={handleScroll} />);
-    const scrollView = document.querySelector('div[style*="overflow: auto"]');
+    const scrollView = document.querySelector('scroll-view[style*="overflow: auto"]');
     expect(document.body.contains(scrollView)).toBe(true);
     if (scrollView) {
       fireEvent.scroll(scrollView);
     }
-    expect(handleScroll).toHaveBeenCalled();
+    expect(handleScroll).toHaveBeenCalledWith({
+      scrollTop: 0,
+      scrollLeft: 0,
+      scrollHeight: 0,
+      clientHeight: 0,
+      clientWidth: 0,
+    });
   });
 });
 
@@ -91,8 +97,12 @@ describe('List/FlatList Component', () => {
       <List
         data={items}
         keyExtractor={(item) => (item as { id: string }).id}
-        renderItem={(item) => <div data-testid={`item-${(item as { id: string }).id}`}>{(item as { name: string }).name}</div>}
-      />
+        renderItem={(item) => (
+          <div data-testid={`item-${(item as { id: string }).id}`}>
+            {(item as { name: string }).name}
+          </div>
+        )}
+      />,
     );
     expect(document.body.contains(screen.getByTestId('item-1'))).toBe(true);
     expect(document.body.contains(screen.getByTestId('item-2'))).toBe(true);
@@ -100,7 +110,9 @@ describe('List/FlatList Component', () => {
   });
 
   it('FlatList 应正确传递 props', () => {
-    const renderItem = vi.fn(({ item }: { item: unknown; index: number }) => <div>{(item as { name: string }).name}</div>);
+    const renderItem = vi.fn(({ item }: { item: unknown; index: number }) => (
+      <div>{(item as { name: string }).name}</div>
+    ));
     render(<FlatList data={items} renderItem={renderItem} />);
     expect(renderItem).toHaveBeenCalledTimes(3);
     expect(renderItem.mock.calls[0]).toEqual([{ item: items[0], index: 0 }]);
@@ -116,7 +128,7 @@ describe('List/FlatList Component', () => {
         ItemSeparatorComponent={Separator}
         keyExtractor={(item) => (item as { id: string }).id}
         renderItem={(item) => <div>{(item as { name: string }).name}</div>}
-      />
+      />,
     );
     expect(screen.getAllByTestId('separator')).toHaveLength(2);
   });
@@ -130,7 +142,7 @@ describe('CapabilityPrompt Component', () => {
         description="需要访问存储空间"
         onAllow={() => undefined}
         onDeny={() => undefined}
-      />
+      />,
     );
     expect(document.body.contains(screen.getByText('storage 权限请求'))).toBe(true);
     expect(document.body.contains(screen.getByText('需要访问存储空间'))).toBe(true);
@@ -145,7 +157,7 @@ describe('CapabilityPrompt Component', () => {
         description="需要网络权限"
         onAllow={handleAllow}
         onDeny={handleDeny}
-      />
+      />,
     );
     fireEvent.click(screen.getByText('允许'));
     expect(handleAllow).toHaveBeenCalled();
@@ -162,7 +174,7 @@ describe('CapabilityPrompt Component', () => {
         description="需要相机权限"
         onAllow={handleAllow}
         onDeny={handleDeny}
-      />
+      />,
     );
     fireEvent.click(screen.getByText('拒绝'));
     expect(handleDeny).toHaveBeenCalled();

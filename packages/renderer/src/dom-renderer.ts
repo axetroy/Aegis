@@ -288,6 +288,7 @@ export class AegisDOMRenderer {
 
     // 设置 id 属性
     dom.id = id;
+    this.applyElementProps(dom, props);
 
     // 注册节点
     this.nodes[id] = { dom, type, props };
@@ -330,10 +331,15 @@ export class AegisDOMRenderer {
         element = document.createElement('button');
         element.textContent = (props['children'] as string) || '';
         break;
+      case NodeType.Form:
+        element = document.createElement('form');
+        if (typeof props['className'] === 'string') element.className = props['className'];
+        break;
       case 'input':
         element = document.createElement('input');
         (element as HTMLInputElement).value = (props['value'] as string) || '';
         (element as HTMLInputElement).placeholder = (props['placeholder'] as string) || '';
+        this.applyElementProps(element, props);
         break;
       case 'scroll-view':
         element = document.createElement('div');
@@ -396,16 +402,34 @@ export class AegisDOMRenderer {
       : {};
   }
 
+  private applyElementProps(element: HTMLElement, props: Record<string, unknown>): void {
+    if (element instanceof HTMLButtonElement) {
+      const type = props['type'];
+      if (type === 'button' || type === 'reset' || type === 'submit') element.type = type;
+      if (typeof props['disabled'] === 'boolean') element.disabled = props['disabled'];
+    }
+
+    if (element instanceof HTMLInputElement) {
+      if (typeof props['type'] === 'string') element.type = props['type'];
+      if (typeof props['value'] === 'string') element.value = props['value'];
+      if (typeof props['placeholder'] === 'string') element.placeholder = props['placeholder'];
+      if (typeof props['name'] === 'string') element.name = props['name'];
+      if (typeof props['disabled'] === 'boolean') element.disabled = props['disabled'];
+      if (typeof props['autoFocus'] === 'boolean') element.autofocus = props['autoFocus'];
+    }
+  }
+
   // 添加事件监听
   private addEventListeners(
     nodeId: string,
     element: HTMLElement,
     props: Record<string, unknown>,
   ): void {
-    // 点击事件
     if (props['onClick']) {
       const handler = (event: Event) => {
-        event.preventDefault();
+        if (!(element instanceof HTMLButtonElement && element.type === 'submit')) {
+          event.preventDefault();
+        }
         this.sendEvent(nodeId, 'click', {
           x: (event as MouseEvent).clientX,
           y: (event as MouseEvent).clientY,
@@ -415,7 +439,6 @@ export class AegisDOMRenderer {
       this.eventHandlers.set(`${nodeId}-click`, handler);
     }
 
-    // 输入事件
     if (props['onChangeText']) {
       const handler = (event: Event) => {
         const value = (event.target as HTMLInputElement).value;
@@ -423,6 +446,50 @@ export class AegisDOMRenderer {
       };
       element.addEventListener('input', handler);
       this.eventHandlers.set(`${nodeId}-input`, handler);
+    }
+
+    for (const eventType of ['focus', 'blur'] as const) {
+      const propName = eventType === 'focus' ? 'onFocus' : 'onBlur';
+      if (!props[propName]) continue;
+      const handler = () => this.sendEvent(nodeId, eventType, {});
+      element.addEventListener(eventType, handler);
+      this.eventHandlers.set(`${nodeId}-${eventType}`, handler);
+    }
+
+    if (props['onScroll']) {
+      const handler = (event: Event) => {
+        const target = event.currentTarget as HTMLElement;
+        this.sendEvent(nodeId, 'scroll', {
+          scrollTop: target.scrollTop,
+          scrollLeft: target.scrollLeft,
+          scrollHeight: target.scrollHeight,
+          clientHeight: target.clientHeight,
+          clientWidth: target.clientWidth,
+        });
+      };
+      element.addEventListener('scroll', handler);
+      this.eventHandlers.set(`${nodeId}-scroll`, handler);
+    }
+
+    if (props['onSubmit'] && element instanceof HTMLFormElement) {
+      const handler = (event: Event) => {
+        event.preventDefault();
+        const formData = new FormData(element);
+        const data: Record<string, string> = {};
+        for (const [name, value] of formData.entries()) {
+          if (typeof value === 'string') {
+            Object.defineProperty(data, name, {
+              value,
+              enumerable: true,
+              configurable: true,
+              writable: true,
+            });
+          }
+        }
+        this.sendEvent(nodeId, 'submit', data);
+      };
+      element.addEventListener('submit', handler);
+      this.eventHandlers.set(`${nodeId}-submit`, handler);
     }
   }
 
@@ -453,12 +520,15 @@ export class AegisDOMRenderer {
     if (node) {
       const previousStyle = node.props['style'];
       Object.assign(node.props, props);
+      this.applyElementProps(node.dom, props);
 
       // 更新样式
       this.applyStyles(node.dom, node.props, previousStyle);
 
       // 更新文本内容
-      if (props['value'] !== undefined) {
+      if (node.type === NodeType.Input && props['value'] !== undefined) {
+        (node.dom as HTMLInputElement).value = String(props['value']);
+      } else if (props['value'] !== undefined) {
         node.dom.textContent = String(props['value']);
       }
 
@@ -474,11 +544,9 @@ export class AegisDOMRenderer {
     const node = this.nodes[id];
 
     if (node) {
+      this.removeEventListeners(id);
       node.dom.remove();
       delete this.nodes[id];
-
-      // 清理事件监听
-      this.removeEventListeners(id);
 
       this.sendResponse(UIMessageType.NodeDeleted, id, true);
     } else {
@@ -488,10 +556,14 @@ export class AegisDOMRenderer {
 
   // 移除事件监听
   private removeEventListeners(nodeId: string): void {
-    this.eventHandlers.forEach((_handler, key) => {
-      if (key.startsWith(nodeId)) {
-        this.eventHandlers.delete(key);
-      }
+    const node = this.nodes[nodeId];
+    if (!node) return;
+    this.eventHandlers.forEach((handler, key) => {
+      if (!key.startsWith(`${nodeId}-`)) return;
+      const eventType = key.slice(nodeId.length + 1);
+      const domEvent = eventType === 'input' ? 'input' : eventType;
+      node.dom.removeEventListener(domEvent, handler);
+      this.eventHandlers.delete(key);
     });
   }
 
@@ -526,6 +598,7 @@ export class AegisDOMRenderer {
       const inputHandler = this.eventHandlers.get(`${id}-input`);
       if (clickHandler) node.dom.removeEventListener('click', clickHandler);
       if (inputHandler) node.dom.removeEventListener('input', inputHandler);
+      this.removeEventListeners(id);
     }
     this.eventHandlers.clear();
 
@@ -553,6 +626,7 @@ export class AegisDOMRenderer {
       const dom = this.createElement(nodeProps.type, nodeProps.props);
       dom.id = nodeProps.id;
       this.nodes[nodeProps.id] = { dom, type: nodeProps.type, props: nodeProps.props };
+      this.applyElementProps(dom, nodeProps.props);
       this.addEventListeners(nodeProps.id, dom, nodeProps.props);
       for (const childId of nodeProps.children ?? []) {
         const childProps = nodes[childId];

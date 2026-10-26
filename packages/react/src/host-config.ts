@@ -101,16 +101,23 @@ function toProtocolValue(value: unknown): unknown {
 
 function serializableProps(instance: AegisInstance): Record<string, unknown> {
   const props: Record<string, unknown> = {};
+  const eventProps: Record<string, { protocolProp: string; suffix: string }> = {
+    onClick: { protocolProp: 'onClick', suffix: 'click' },
+    onChange: { protocolProp: 'onChangeText', suffix: 'input' },
+    onChangeText: { protocolProp: 'onChangeText', suffix: 'input' },
+    onFocus: { protocolProp: 'onFocus', suffix: 'focus' },
+    onBlur: { protocolProp: 'onBlur', suffix: 'blur' },
+    onScroll: { protocolProp: 'onScroll', suffix: 'scroll' },
+    onSubmit: { protocolProp: 'onSubmit', suffix: 'submit' },
+  };
+
   for (const [key, value] of Object.entries(instance.props)) {
     if (key === 'children') continue;
-    if (key === 'onClick' && typeof value === 'function') {
-      const handlerId = `${instance.id}-click`;
+    const eventProp = eventProps[key];
+    if (eventProp && typeof value === 'function') {
+      const handlerId = `${instance.id}-${eventProp.suffix}`;
       eventHandlers.set(handlerId, value as (data?: unknown) => void);
-      props[key] = handlerId;
-    } else if (key === 'onChangeText' && typeof value === 'function') {
-      const handlerId = `${instance.id}-input`;
-      eventHandlers.set(handlerId, value as (data?: unknown) => void);
-      props[key] = handlerId;
+      props[eventProp.protocolProp] = handlerId;
     } else {
       const safeValue = toProtocolValue(value);
       if (safeValue !== undefined) props[key] = safeValue;
@@ -184,7 +191,7 @@ export function handleNodeMethodResult(payload: unknown): void {
 function releaseInstance(instance: AegisInstance): void {
   instances.delete(instance.id);
   for (const handlerId of eventHandlers.keys()) {
-    if (handlerId === `${instance.id}-click` || handlerId === `${instance.id}-input`) {
+    if (handlerId.startsWith(`${instance.id}-`)) {
       eventHandlers.delete(handlerId);
     }
   }
@@ -212,7 +219,9 @@ const NODE_TYPE_MAP: Record<string, NodeType> = {
   Text: NodeType.Text,
   Button: NodeType.Button,
   Input: NodeType.Input,
+  Form: NodeType.Form,
   'scroll-view': NodeType.ScrollView,
+  form: NodeType.Form,
   div: NodeType.View,
   span: NodeType.Text,
   button: NodeType.Button,

@@ -20,6 +20,8 @@ export enum EventType {
   Change = 'change',
   Focus = 'focus',
   Blur = 'blur',
+  Scroll = 'scroll',
+  Submit = 'submit',
 
   // 生命周期事件
   Load = 'load',

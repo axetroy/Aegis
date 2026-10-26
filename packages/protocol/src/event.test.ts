@@ -3,12 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  EventType,
-  EventMessageType,
-  type EventData,
-  type EventHandlers,
-} from './event';
+import { EventType, EventMessageType, type EventData, type EventHandlers } from './event';
 
 describe('@aegis/protocol/event', () => {
   describe('EventType', () => {
@@ -28,6 +23,8 @@ describe('@aegis/protocol/event', () => {
       expect(EventType.Change).toBe('change');
       expect(EventType.Focus).toBe('focus');
       expect(EventType.Blur).toBe('blur');
+      expect(EventType.Scroll).toBe('scroll');
+      expect(EventType.Submit).toBe('submit');
     });
 
     it('should define lifecycle events', () => {

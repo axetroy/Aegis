@@ -11,6 +11,7 @@ export enum NodeType {
   Button = 'button',
   Input = 'input',
   ScrollView = 'scroll-view',
+  Form = 'form',
   // 可扩展更多节点类型
 }
 

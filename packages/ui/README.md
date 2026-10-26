@@ -30,3 +30,26 @@ function App() {
   );
 }
 ```
+
+## 跨 renderer 事件
+
+`Input` 的 `onChangeText`、`onFocus` 和 `onBlur` 通过 Aegis 事件协议派发。使用 `Form` 时，为 `Input` 设置 `name`，提交按钮使用 `type="submit"`：
+
+```tsx
+<Form onSubmit={(values) => console.log(values)}>
+  <Input name="query" onChangeText={(value) => console.log(value)} />
+  <Button type="submit">Search</Button>
+</Form>
+```
+
+`ScrollView` 的 `onScroll` 接收可序列化快照，而不是 DOM `UIEvent`：
+
+```ts
+interface ScrollViewEvent {
+  scrollTop: number;
+  scrollLeft: number;
+  scrollHeight: number;
+  clientHeight: number;
+  clientWidth: number;
+}
+```

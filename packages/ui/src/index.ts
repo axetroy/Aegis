@@ -16,4 +16,4 @@ export { CapabilityPrompt } from './components/CapabilityPrompt';
 
 // 类型导出
 export type { ViewProps, TextProps, ButtonProps, InputProps, BaseStyle } from './types';
-export type { ScrollViewProps } from './components/ScrollView';
+export type { ScrollViewEvent, ScrollViewProps } from './components/ScrollView';

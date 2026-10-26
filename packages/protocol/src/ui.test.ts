@@ -21,6 +21,7 @@ describe('@aegis/protocol/ui', () => {
       expect(NodeType.Button).toBe('button');
       expect(NodeType.Input).toBe('input');
       expect(NodeType.ScrollView).toBe('scroll-view');
+      expect(NodeType.Form).toBe('form');
     });
   });
 

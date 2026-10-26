@@ -10,7 +10,7 @@ import { NodeType, UIMessageType } from '@aegis/protocol';
 describe('@aegis/renderer/dom-renderer', () => {
   let container: HTMLDivElement;
   let renderer: AegisDOMRenderer;
-  let onEvent: ReturnType<typeof vi.fn>;
+  let onEvent: ReturnType<typeof vi.fn<(message: { type: string; payload: unknown }) => void>>;
 
   const queryApp = <T extends Element = Element>(selector: string): T | null =>
     renderer.shadowRoot.querySelector<T>(selector);
@@ -368,6 +368,22 @@ describe('@aegis/renderer/dom-renderer', () => {
       expect(button?.textContent).toBe('Click Me');
     });
 
+    it('should apply submit and disabled attributes to a created Button node', () => {
+      renderer.handleMessage({
+        type: UIMessageType.CreateNode,
+        payload: {
+          id: 'submit-button',
+          type: NodeType.Button,
+          props: { type: 'submit', disabled: true },
+          children: [],
+        },
+      });
+
+      const button = queryApp<HTMLButtonElement>('#submit-button');
+      expect(button?.type).toBe('submit');
+      expect(button?.disabled).toBe(true);
+    });
+
     it('should create Input node', () => {
       renderer.handleMessage({
         type: UIMessageType.CreateNode,
@@ -456,6 +472,29 @@ describe('@aegis/renderer/dom-renderer', () => {
       });
 
       expect(queryApp('#delete-test')).toBeFalsy();
+    });
+
+    it('should remove event listeners when deleting a node', () => {
+      renderer.handleMessage({
+        type: UIMessageType.CreateNode,
+        payload: {
+          id: 'delete-event-test',
+          type: NodeType.Button,
+          props: { onClick: 'delete-event-test-click' },
+          children: [],
+        },
+      });
+
+      const button = queryApp<HTMLButtonElement>('#delete-event-test');
+      if (!button) throw new Error('Expected button node');
+      renderer.handleMessage({
+        type: UIMessageType.DeleteNode,
+        payload: { id: 'delete-event-test' },
+      });
+
+      onEvent.mockClear();
+      button.click();
+      expect(onEvent).not.toHaveBeenCalled();
     });
   });
 

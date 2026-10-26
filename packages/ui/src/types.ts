@@ -37,6 +37,7 @@ export interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, 'st
   };
   children?: ReactNode;
   disabled?: boolean;
+  type?: 'button' | 'reset' | 'submit';
   onClick?: () => void;
 }
 
