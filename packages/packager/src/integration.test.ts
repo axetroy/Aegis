@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { rmSync, mkdirSync } from 'node:fs';
+import { rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   pack,
@@ -17,10 +17,16 @@ import {
 } from './index.js';
 
 const testDir = join(process.cwd(), 'packages/packager/dist-integration-test');
+const inputDir = join(testDir, 'input');
 
 describe('@aegis/packager integration', () => {
   beforeAll(() => {
-    mkdirSync(testDir, { recursive: true });
+    mkdirSync(join(inputDir, 'dist'), { recursive: true });
+    writeFileSync(
+      join(inputDir, 'package.json'),
+      JSON.stringify({ name: 'aegis-playground', version: '1.0.0' }),
+    );
+    writeFileSync(join(inputDir, 'dist', 'index.js'), `// test bundle\n${'x'.repeat(2048)}`);
   });
 
   afterAll(() => {
@@ -32,7 +38,6 @@ describe('@aegis/packager integration', () => {
   });
 
   it('完整打包-解析流程', async () => {
-    const inputDir = join(process.cwd(), 'apps/playground');
     const outputAegis = join(testDir, 'test-app.aegis');
 
     // 1. 打包
@@ -70,7 +75,6 @@ describe('@aegis/packager integration', () => {
   });
 
   it('被篡改的包应通过完整性校验失败', async () => {
-    const inputDir = join(process.cwd(), 'apps/playground');
     const tamperedOutput = join(testDir, 'tampered.aegis');
 
     await pack({ inputDir, output: tamperedOutput });
@@ -94,7 +98,7 @@ describe('@aegis/packager integration', () => {
     const { privateKey, publicKey } = await generateKeyPair();
     const outputAegis = join(testDir, 'signed-app.aegis');
     await pack({
-      inputDir: join(process.cwd(), 'apps/playground'),
+      inputDir,
       output: outputAegis,
       privateKey,
     });
@@ -112,7 +116,7 @@ describe('@aegis/packager integration', () => {
   it('解包时拒绝逃逸输出目录的文件路径', async () => {
     const outputAegis = join(testDir, 'path-check.aegis');
     await pack({
-      inputDir: join(process.cwd(), 'apps/playground'),
+      inputDir,
       output: outputAegis,
     });
     const pkg = await unpack(outputAegis, { verifySignature: false });
