@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { Input } from './Input';
 import { Form } from './Form';
 import { ScrollView } from './ScrollView';
@@ -12,13 +12,13 @@ describe('Input Component', () => {
   it('应渲染 input 元素', () => {
     render(<Input placeholder="请输入" />);
     const input = screen.getByPlaceholderText('请输入');
-    expect(input).toBeInTheDocument();
+    expect(document.body.contains(input)).toBe(true);
   });
 
   it('受控模式应显示 value', () => {
     render(<Input value="hello" />);
     const input = screen.getByDisplayValue('hello');
-    expect(input).toBeInTheDocument();
+    expect(document.body.contains(input)).toBe(true);
   });
 
   it('onChangeText 应被调用', () => {
@@ -32,7 +32,7 @@ describe('Input Component', () => {
   it('disabled 状态应应用样式', () => {
     render(<Input disabled />);
     const input = screen.getByRole('textbox');
-    expect(input).toBeDisabled();
+    expect(input.hasAttribute('disabled')).toBe(true);
   });
 
   it('secureTextEntry 应切换为 password 类型', () => {
@@ -64,14 +64,14 @@ describe('ScrollView Component', () => {
         <div data-testid="content">Content</div>
       </ScrollView>
     );
-    expect(screen.getByTestId('content')).toBeInTheDocument();
+    expect(document.body.contains(screen.getByTestId('content'))).toBe(true);
   });
 
   it('onScroll 事件应触发', () => {
     const handleScroll = vi.fn();
     render(<ScrollView onScroll={handleScroll} />);
     const scrollView = document.querySelector('div[style*="overflow: auto"]');
-    expect(scrollView).toBeInTheDocument();
+    expect(document.body.contains(scrollView)).toBe(true);
     if (scrollView) {
       fireEvent.scroll(scrollView);
     }
@@ -94,9 +94,9 @@ describe('List/FlatList Component', () => {
         renderItem={(item) => <div data-testid={`item-${(item as { id: string }).id}`}>{(item as { name: string }).name}</div>}
       />
     );
-    expect(screen.getByTestId('item-1')).toBeInTheDocument();
-    expect(screen.getByTestId('item-2')).toBeInTheDocument();
-    expect(screen.getByTestId('item-3')).toBeInTheDocument();
+    expect(document.body.contains(screen.getByTestId('item-1'))).toBe(true);
+    expect(document.body.contains(screen.getByTestId('item-2'))).toBe(true);
+    expect(document.body.contains(screen.getByTestId('item-3'))).toBe(true);
   });
 
   it('FlatList 应正确传递 props', () => {
@@ -132,8 +132,8 @@ describe('CapabilityPrompt Component', () => {
         onDeny={() => undefined}
       />
     );
-    expect(screen.getByText('storage 权限请求')).toBeInTheDocument();
-    expect(screen.getByText('需要访问存储空间')).toBeInTheDocument();
+    expect(document.body.contains(screen.getByText('storage 权限请求'))).toBe(true);
+    expect(document.body.contains(screen.getByText('需要访问存储空间'))).toBe(true);
   });
 
   it('点击允许应调用 onAllow 并隐藏', () => {
@@ -150,7 +150,7 @@ describe('CapabilityPrompt Component', () => {
     fireEvent.click(screen.getByText('允许'));
     expect(handleAllow).toHaveBeenCalled();
     expect(handleDeny).not.toHaveBeenCalled();
-    expect(screen.queryByText('network 权限请求')).not.toBeInTheDocument();
+    expect(document.body.contains(screen.queryByText('network 权限请求'))).toBe(false);
   });
 
   it('点击拒绝应调用 onDeny 并隐藏', () => {

@@ -112,9 +112,9 @@ function App() {
 #### 2.3 能力系统实现
 - [x] `packages/capabilities` - 能力实现
   - [x] Storage 能力（localStorage/sessionStorage）
-  - [x] Network 能力（fetch/XMLHttpRequest）
-  - [x] Camera 能力（预留接口）
-  - [x] Location 能力（预留接口）
+  - [ ] Host 代理网络 transport（策略与请求 API 已有，实际传输未接入）
+  - [ ] Camera 能力实现（当前仅为接口占位）
+  - [ ] Location 能力实现（当前仅为接口占位）
 
 #### 2.4 安全策略
 - [x] `packages/security` - 安全策略
@@ -178,10 +178,10 @@ function App() {
 - [x] 证书链管理
 
 #### 3.5 模块加载器
-- [x] 动态模块加载
-- [x] 依赖解析
-- [x] 沙箱执行环境
-- [x] 模块缓存
+- [ ] 动态模块加载（当前 loader 仅导出类型）
+- [ ] 依赖解析
+- [ ] Worker 沙箱执行
+- [ ] 模块缓存
 
 **交付物：**
 ```bash
@@ -328,7 +328,11 @@ aegis/
 
 ## 当前状态
 
-**阶段一（MVP）** - ✅ 已完成
+**阶段一至阶段三** - 🟡 部分完成
+
+当前包含 Worker UI 演示、React 与能力模块、Storage、安全策略和 .aegis 打包签名实现，但 React Worker 渲染闭环、Host 网络代理及应用模块加载仍未打通。阶段四的多应用平台、应用商店、DevTools 与崩溃恢复尚未开始。
+
+下方阶段一的勾选项记录模块与测试是否存在；它们不代表 React 已在 Worker 中执行，也不代表端到端安全边界已通过集成验证。
 
 ### 进度更新
 
@@ -364,4 +368,4 @@ aegis/
 
 ---
 
-*最后更新：2024年*
+*最后更新：2026年*

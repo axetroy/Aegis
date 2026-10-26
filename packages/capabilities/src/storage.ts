@@ -5,7 +5,7 @@
  */
 
 import { CapabilityName } from '@aegis/protocol';
-import { PermissionManager, type ResourceLimits } from '@aegis/security';
+import { parseMemorySize, PermissionManager, type ResourceLimits } from '@aegis/security';
 
 // 存储后端接口
 export interface StorageBackend {
@@ -19,43 +19,23 @@ export interface StorageBackend {
 // 默认 localStorage 后端（用于非 Worker 环境）
 export class LocalStorageBackend implements StorageBackend {
   get(key: string): string | null {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
+    return localStorage.getItem(key);
   }
 
   set(key: string, value: string): void {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      // Storage full or unavailable
-    }
+    localStorage.setItem(key, value);
   }
 
   remove(key: string): void {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      // Storage unavailable
-    }
+    localStorage.removeItem(key);
   }
 
   clear(): void {
-    try {
-      localStorage.clear();
-    } catch {
-      // Storage unavailable
-    }
+    localStorage.clear();
   }
 
   keys(): string[] {
-    try {
-      return Object.keys(localStorage);
-    } catch {
-      return [];
-    }
+    return Object.keys(localStorage);
   }
 }
 
@@ -100,7 +80,13 @@ export class StorageCapability {
     this.namespace = namespace;
     this.permissionManager = permissionManager;
     this.backend = backend ?? new LocalStorageBackend();
-    this.limits = limits;
+    this.limits = {
+      ...limits,
+      storage:
+        limits.storage ??
+        permissionManager.getCapabilityState(CapabilityName.Storage)?.policy?.storage?.quota ??
+        permissionManager.getResourceLimits().storage,
+    };
   }
 
   /**
@@ -115,28 +101,31 @@ export class StorageCapability {
    */
   private checkQuota(key: string, value: string): boolean {
     if (!this.limits.storage) return true;
-    // 简化实现：估算已用空间
-    const currentKeys = this.backend.keys();
     let totalSize = 0;
-    for (const k of currentKeys) {
-      const v = this.backend.get(k);
-      if (v) {
-        totalSize += k.length + v.length;
+    for (const existingKey of this.backend.keys()) {
+      if (!existingKey.startsWith(this.getPrefix())) continue;
+      const existingValue = this.backend.get(existingKey);
+      if (existingValue !== null) {
+        totalSize +=
+          new TextEncoder().encode(existingKey).length +
+          new TextEncoder().encode(existingValue).length;
       }
     }
-    // 添加新值后的总大小
-    const newSize = totalSize + key.length + value.length;
-    // 这里简化处理，实际应使用 parseMemorySize
-    return newSize < 10 * 1024 * 1024; // 默认 10MB 限制
+    const previousValue = this.backend.get(key);
+    if (previousValue !== null) {
+      totalSize -=
+        new TextEncoder().encode(key).length + new TextEncoder().encode(previousValue).length;
+    }
+    const newSize =
+      totalSize + new TextEncoder().encode(key).length + new TextEncoder().encode(value).length;
+    return newSize <= parseMemorySize(this.limits.storage);
   }
 
   /**
    * 读取数据
    */
   async get<T = unknown>(key: string): Promise<T | null> {
-    const allowed = await this.permissionManager.requestCapability(
-      CapabilityName.Storage,
-    );
+    const allowed = await this.permissionManager.requestCapability(CapabilityName.Storage);
     if (!allowed) {
       return null;
     }
@@ -158,15 +147,16 @@ export class StorageCapability {
    * 写入数据
    */
   async set<T = unknown>(key: string, value: T): Promise<void> {
-    const allowed = await this.permissionManager.requestCapability(
-      CapabilityName.Storage,
-    );
+    const allowed = await this.permissionManager.requestCapability(CapabilityName.Storage);
     if (!allowed) {
       throw new Error('Storage access denied');
     }
 
     const fullKey = `${this.getPrefix()}${key}`;
     const serialized = JSON.stringify(value);
+    if (serialized === undefined) {
+      throw new TypeError('Storage values must be JSON-serializable');
+    }
 
     if (!this.checkQuota(fullKey, serialized)) {
       throw new Error('Storage quota exceeded');
@@ -179,9 +169,7 @@ export class StorageCapability {
    * 删除数据
    */
   async remove(key: string): Promise<void> {
-    const allowed = await this.permissionManager.requestCapability(
-      CapabilityName.Storage,
-    );
+    const allowed = await this.permissionManager.requestCapability(CapabilityName.Storage);
     if (!allowed) {
       return;
     }
@@ -193,9 +181,7 @@ export class StorageCapability {
    * 清空存储
    */
   async clear(): Promise<void> {
-    const allowed = await this.permissionManager.requestCapability(
-      CapabilityName.Storage,
-    );
+    const allowed = await this.permissionManager.requestCapability(CapabilityName.Storage);
     if (!allowed) {
       return;
     }
@@ -213,9 +199,7 @@ export class StorageCapability {
    * 列出所有键
    */
   async keys(): Promise<string[]> {
-    const allowed = await this.permissionManager.requestCapability(
-      CapabilityName.Storage,
-    );
+    const allowed = await this.permissionManager.requestCapability(CapabilityName.Storage);
     if (!allowed) {
       return [];
     }

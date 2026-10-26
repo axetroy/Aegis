@@ -32,9 +32,14 @@ export interface NetworkError {
 }
 
 // 拦截器函数类型
-export type RequestInterceptor = (options: NetworkRequestOptions) => NetworkRequestOptions | Promise<NetworkRequestOptions>;
-export type ResponseInterceptor = (response: NetworkResponse) => NetworkResponse | Promise<NetworkResponse>;
+export type RequestInterceptor = (
+  options: NetworkRequestOptions,
+) => NetworkRequestOptions | Promise<NetworkRequestOptions>;
+export type ResponseInterceptor = (
+  response: NetworkResponse,
+) => NetworkResponse | Promise<NetworkResponse>;
 export type ErrorInterceptor = (error: NetworkError) => NetworkError | Promise<NetworkError>;
+export type NetworkTransport = (options: NetworkRequestOptions) => Promise<NetworkResponse>;
 
 // 网络能力类
 export class NetworkCapability {
@@ -43,10 +48,16 @@ export class NetworkCapability {
   private responseInterceptors: ResponseInterceptor[] = [];
   private errorInterceptors: ErrorInterceptor[] = [];
   private defaultPolicy?: CapabilityPolicy;
+  private transport?: NetworkTransport;
 
-  constructor(permissionManager: PermissionManager, defaultPolicy?: CapabilityPolicy) {
+  constructor(
+    permissionManager: PermissionManager,
+    defaultPolicy?: CapabilityPolicy,
+    transport?: NetworkTransport,
+  ) {
     this.permissionManager = permissionManager;
     this.defaultPolicy = defaultPolicy;
+    this.transport = transport;
   }
 
   /**
@@ -129,17 +140,11 @@ export class NetworkCapability {
   /**
    * 执行底层网络请求
    */
-  private async executeRequest(_options: NetworkRequestOptions): Promise<NetworkResponse> {
-    // 在真实环境中，这里会通过宿主的安全网络代理执行请求
-    // 在测试环境中，我们模拟一个响应
-    return {
-      status: 200,
-      statusText: 'OK',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ success: true }),
-    };
+  private async executeRequest(options: NetworkRequestOptions): Promise<NetworkResponse> {
+    if (!this.transport) {
+      throw new Error('Network transport is not configured');
+    }
+    return this.transport(options);
   }
 
   /**
@@ -152,7 +157,11 @@ export class NetworkCapability {
   /**
    * POST 请求便捷方法
    */
-  async post(url: string, body?: string, headers?: Record<string, string>): Promise<NetworkResponse> {
+  async post(
+    url: string,
+    body?: string,
+    headers?: Record<string, string>,
+  ): Promise<NetworkResponse> {
     return this.request({ url, method: 'POST', headers, body });
   }
 
@@ -170,6 +179,7 @@ export class NetworkCapability {
 export function createNetworkCapability(
   permissionManager: PermissionManager,
   defaultPolicy?: CapabilityPolicy,
+  transport?: NetworkTransport,
 ): NetworkCapability {
-  return new NetworkCapability(permissionManager, defaultPolicy);
+  return new NetworkCapability(permissionManager, defaultPolicy, transport);
 }

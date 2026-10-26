@@ -19,6 +19,7 @@ import {
   createDefaultResourceUsage,
   type PermissionManagerConfig,
 } from './types';
+import { parseMemorySize } from './policies';
 
 export class PermissionManager {
   private appId: string;
@@ -27,7 +28,10 @@ export class PermissionManager {
   private defaultDecision: PermissionDecision;
   private resourceLimits: Required<ResourceLimits>;
   private resourceUsage: ResourceUsage;
-  private pendingRequests: Map<string, { resolve: (value: boolean) => void; reject: (reason?: unknown) => void }> = new Map();
+  private pendingRequests: Map<
+    string,
+    { resolve: (value: boolean) => void; reject: (reason?: unknown) => void }
+  > = new Map();
 
   constructor(config: PermissionManagerConfig) {
     this.appId = config.appId;
@@ -167,14 +171,22 @@ export class PermissionManager {
    */
   checkResourceLimit(limit: keyof ResourceLimits, value: number): boolean {
     const limitValue = this.resourceLimits[limit];
-    if (!limitValue) return true;
+    if (limitValue === undefined) return Number.isFinite(value) && value >= 0;
 
     if (typeof limitValue === 'number') {
-      return value <= limitValue;
+      return Number.isFinite(value) && value >= 0 && value <= limitValue;
     }
 
-    // 字符串格式的资源限制（如 "64MB"）需要解析
-    return true;
+    if (limit === 'cpu') {
+      const match = /^(\d+(?:\.\d+)?)%$/.exec(limitValue);
+      return !!match && Number.isFinite(value) && value >= 0 && value <= Number(match[1]);
+    }
+
+    try {
+      return Number.isFinite(value) && value >= 0 && value <= parseMemorySize(limitValue);
+    } catch {
+      return false;
+    }
   }
 
   /**

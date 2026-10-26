@@ -11,6 +11,7 @@ export { validateManifest, validatePackage } from './validate.js';
 export {
   generateKeyPair,
   generateRSAKeyPair,
+  extractPublicKey,
   computeHash,
   signData,
   verifySignature,

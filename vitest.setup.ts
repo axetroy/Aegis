@@ -3,7 +3,7 @@
  */
 
 // 添加 jest-dom 匹配器
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 // Mock window.postMessage（jsdom 要求 2 个参数）
 const originalPostMessage = window.postMessage.bind(window);

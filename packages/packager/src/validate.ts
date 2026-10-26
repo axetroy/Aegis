@@ -2,10 +2,7 @@
  * @aegis/packager - Manifest 验证器
  */
 
-import {
-  type AppManifest,
-  type IntegrityCheckResult,
-} from '@aegis/protocol';
+import { type AppManifest, type IntegrityCheckResult } from '@aegis/protocol';
 import { checkIntegrity } from './unpack.js';
 
 // 语义化版本正则
@@ -18,7 +15,9 @@ export function validateManifest(manifest: AppManifest): string[] {
   if (!manifest.name || manifest.name.trim() === '') {
     errors.push('manifest.name is required');
   } else if (!/^[a-z0-9_-]+$/.test(manifest.name)) {
-    errors.push('manifest.name must contain only lowercase letters, digits, hyphens, and underscores');
+    errors.push(
+      'manifest.name must contain only lowercase letters, digits, hyphens, and underscores',
+    );
   }
 
   if (!manifest.version) {
@@ -65,19 +64,19 @@ export async function validatePackage(
   }
 
   // 3. 签名验证
-  if (verifySig && publicKey) {
+  if (verifySig) {
     const { verifySignature: verifyFn } = await import('./crypto.js');
-    const manifestBytes = new TextEncoder().encode(
-      JSON.stringify(pkg.spec.manifest),
-    );
+    const manifestBytes = new TextEncoder().encode(JSON.stringify(pkg.spec.manifest));
     const bundleBytes = pkg.files.get('bundle.js') || new Uint8Array(0);
     const sigData = new Uint8Array(manifestBytes.length + bundleBytes.length);
     sigData.set(manifestBytes, 0);
     sigData.set(bundleBytes, manifestBytes.length);
+    const signature = pkg.spec.signature?.signature;
+    const keyToVerify = publicKey ?? pkg.spec.signature?.publicKey;
 
-    if (!pkg.spec.signature?.signature || !pkg.spec.signature.dataHash) {
-      errors.push('Package has no signature');
-    } else if (!verifyFn(sigData, pkg.spec.signature.signature, publicKey)) {
+    if (!signature || !keyToVerify) {
+      errors.push('Package has no signature or public key');
+    } else if (!verifyFn(sigData, signature, keyToVerify)) {
       errors.push('Signature verification failed');
     }
   }
