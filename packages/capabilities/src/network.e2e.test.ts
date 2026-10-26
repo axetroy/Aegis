@@ -11,7 +11,12 @@ describe('NetworkCapability E2E', () => {
   beforeEach(() => {
     manager = new PermissionManager({ appId: 'net-app', manifest: mockManifest });
     manager.grantCapability(CapabilityName.Network);
-    network = new NetworkCapability(manager);
+    network = new NetworkCapability(manager, undefined, async () => ({
+      status: 200,
+      statusText: 'OK',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ success: true }),
+    }));
   });
 
   it('基础请求应成功', async () => {
@@ -34,17 +39,17 @@ describe('NetworkCapability E2E', () => {
 
   it('拦截器链式执行', async () => {
     const callOrder: string[] = [];
-    
+
     network.addRequestInterceptor((opts) => {
       callOrder.push('req1');
       return { ...opts, headers: { ...opts.headers, 'X-Auth': 'token' } };
     });
-    
+
     network.addResponseInterceptor((resp) => {
       callOrder.push('res1');
       return resp;
     });
-    
+
     await network.get('https://example.com');
     expect(callOrder).toEqual(['req1', 'res1']);
   });

@@ -14,7 +14,9 @@ describe('PermissionManager', () => {
     permissions: [],
   };
 
-  const createConfig = (overrides: Partial<PermissionManagerConfig> = {}): PermissionManagerConfig => ({
+  const createConfig = (
+    overrides: Partial<PermissionManagerConfig> = {},
+  ): PermissionManagerConfig => ({
     appId: 'test-app',
     manifest: mockManifest,
     ...overrides,
@@ -33,7 +35,9 @@ describe('PermissionManager', () => {
     });
 
     it('allow by default 时应允许所有能力', () => {
-      const allowManager = new PermissionManager(createConfig({ defaultDecision: PermissionDecision.Allow }));
+      const allowManager = new PermissionManager(
+        createConfig({ defaultDecision: PermissionDecision.Allow }),
+      );
       expect(allowManager.canAccess(CapabilityName.Storage)).toBe(true);
       expect(allowManager.canAccess(CapabilityName.Network)).toBe(true);
     });
@@ -72,7 +76,9 @@ describe('PermissionManager', () => {
 
     it('授权后可 resolve pending request', async () => {
       // 使用 allow 默认策略才能测试 pending request 被 grant 的场景
-      const allowManager = new PermissionManager(createConfig({ defaultDecision: PermissionDecision.Allow }));
+      const allowManager = new PermissionManager(
+        createConfig({ defaultDecision: PermissionDecision.Allow }),
+      );
       const promise = allowManager.requestCapability(CapabilityName.Storage);
       // 即使已授权，也能正常 resolve
       const result = await promise;
@@ -86,6 +92,14 @@ describe('PermissionManager', () => {
       const m = new PermissionManager(createConfig({ resourceLimits: limits }));
       expect(m.checkResourceLimit('uiNodes', 50)).toBe(true);
       expect(m.checkResourceLimit('uiNodes', 150)).toBe(false);
+    });
+
+    it('checkResourceLimit 应执行字符串资源限制', () => {
+      expect(manager.checkResourceLimit('storage', 10 * 1024 * 1024)).toBe(true);
+      expect(manager.checkResourceLimit('storage', 10 * 1024 * 1024 + 1)).toBe(false);
+      expect(manager.checkResourceLimit('maxMessageSize', -1)).toBe(false);
+      expect(manager.checkResourceLimit('cpu', 100)).toBe(true);
+      expect(manager.checkResourceLimit('cpu', 101)).toBe(false);
     });
 
     it('getResourceLimits 应返回合并后的配置', () => {

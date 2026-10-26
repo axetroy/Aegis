@@ -11,7 +11,12 @@ describe('NetworkCapability', () => {
   beforeEach(() => {
     manager = new PermissionManager({ appId: 'test', manifest: mockManifest });
     manager.grantCapability(CapabilityName.Network);
-    network = new NetworkCapability(manager);
+    network = new NetworkCapability(manager, undefined, async () => ({
+      status: 200,
+      statusText: 'OK',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ success: true }),
+    }));
   });
 
   describe('request', () => {
@@ -23,19 +28,27 @@ describe('NetworkCapability', () => {
 
     it('未授权时应抛出错误', async () => {
       manager.reset();
-      await expect(network.request({ url: 'https://example.com' }))
-        .rejects.toThrow('denied');
+      await expect(network.request({ url: 'https://example.com' })).rejects.toThrow('denied');
     });
 
     it('非法 URL 应抛出错误', async () => {
-      await expect(network.request({ url: 'not-a-url' }))
-        .rejects.toThrow('Invalid URL');
+      await expect(network.request({ url: 'not-a-url' })).rejects.toThrow('Invalid URL');
+    });
+
+    it('未配置宿主传输适配器时应明确失败而非返回模拟成功', async () => {
+      const unconfiguredNetwork = new NetworkCapability(manager);
+      await expect(
+        unconfiguredNetwork.request({ url: 'https://example.com' }),
+      ).rejects.toMatchObject({ message: 'Network transport is not configured' });
     });
   });
 
   describe('拦截器', () => {
     it('request interceptor 应修改请求选项', async () => {
-      const interceptor = vi.fn((opts) => ({ ...opts, headers: { ...opts.headers, 'X-Custom': 'true' } }));
+      const interceptor = vi.fn((opts) => ({
+        ...opts,
+        headers: { ...opts.headers, 'X-Custom': 'true' },
+      }));
       network.addRequestInterceptor(interceptor);
       await network.request({ url: 'https://example.com' });
       expect(interceptor).toHaveBeenCalled();
@@ -73,7 +86,10 @@ describe('NetworkCapability', () => {
 
 describe('createNetworkCapability', () => {
   it('应创建网络能力实例', () => {
-    const manager = new PermissionManager({ appId: 'app', manifest: { name: 'app', version: '1.0.0', permissions: [] } });
+    const manager = new PermissionManager({
+      appId: 'app',
+      manifest: { name: 'app', version: '1.0.0', permissions: [] },
+    });
     const cap = createNetworkCapability(manager);
     expect(cap).toBeInstanceOf(NetworkCapability);
   });

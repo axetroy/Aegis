@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { StorageCapability, LocalStorageBackend, WorkerStorageBackend, createStorageCapability } from './storage';
+import {
+  StorageCapability,
+  LocalStorageBackend,
+  WorkerStorageBackend,
+  createStorageCapability,
+} from './storage';
 import { PermissionManager } from '@aegis/security';
 import { CapabilityName, type AppManifest } from '@aegis/protocol';
 
@@ -32,6 +37,30 @@ describe('StorageCapability', () => {
     it('不存在的 key 应返回 null', async () => {
       const result = await storage.get('missing');
       expect(result).toBe(null);
+    });
+
+    it('应按配置配额计算 UTF-8 字节，并允许覆盖原值', async () => {
+      const quotaStorage = new StorageCapability('quota-app', manager, new WorkerStorageBackend(), {
+        storage: '24B',
+      });
+
+      await quotaStorage.set('k', '1234567');
+      await quotaStorage.set('k', 'abcdefghijk');
+      await expect(quotaStorage.set('k', 'a much larger value')).rejects.toThrow(
+        'Storage quota exceeded',
+      );
+    });
+
+    it('配额应只计算当前应用命名空间', async () => {
+      const backend = new WorkerStorageBackend();
+      const firstApp = new StorageCapability('first', manager, backend, { storage: '20B' });
+      const secondApp = new StorageCapability('second', manager, backend, { storage: '20B' });
+
+      await firstApp.set('k', '1234567');
+      await secondApp.set('k', '1234567');
+
+      expect(await firstApp.get('k')).toBe('1234567');
+      expect(await secondApp.get('k')).toBe('1234567');
     });
   });
 
@@ -101,7 +130,10 @@ describe('StorageBackend', () => {
 
 describe('createStorageCapability', () => {
   it('应创建带默认后端的存储能力', () => {
-    const manager = new PermissionManager({ appId: 'app', manifest: { name: 'app', version: '1.0.0', permissions: [] } });
+    const manager = new PermissionManager({
+      appId: 'app',
+      manifest: { name: 'app', version: '1.0.0', permissions: [] },
+    });
     manager.grantCapability(CapabilityName.Storage);
     const cap = createStorageCapability('app', manager);
     expect(cap).toBeInstanceOf(StorageCapability);

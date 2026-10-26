@@ -6,7 +6,6 @@
 
 import crypto from 'node:crypto';
 
-
 /** 生成 Ed25519 密钥对 */
 export function generateKeyPair(): Promise<{
   privateKey: string;
@@ -67,9 +66,7 @@ export function generateRSAKeyPair(): Promise<{
  * 使用 Node.js crypto 的 publicKeys 功能
  */
 export function extractPublicKey(_privateKey: string): string {
-  // Node.js 24 API 变化，公钥在 generateKeyPair 时已保存
-  // 签名验证依赖调用方提供 publicKey
-  return '';
+  return crypto.createPublicKey(_privateKey).export({ type: 'spki', format: 'pem' }).toString();
 }
 
 export function computeHash(data: Uint8Array | string): string {
@@ -101,11 +98,7 @@ export function signData(
  * @param publicKey PEM 格式的公钥
  * @returns 验证结果
  */
-export function verifySignature(
-  data: Uint8Array,
-  signature: string,
-  publicKey: string,
-): boolean {
+export function verifySignature(data: Uint8Array, signature: string, publicKey: string): boolean {
   try {
     // Node.js 24: crypto.verify 接受 Buffer 签名
     return crypto.verify(null, data, publicKey, Buffer.from(signature, 'base64'));
@@ -115,10 +108,7 @@ export function verifySignature(
 }
 
 /** 构建待签名的数据（manifest + bundle bytes 的序列化组合） */
-export function buildSignaturePayload(
-  manifestJson: string,
-  bundleBytes: Uint8Array,
-): Uint8Array {
+export function buildSignaturePayload(manifestJson: string, bundleBytes: Uint8Array): Uint8Array {
   // 签名数据 = manifest JSON + bundle bytes
   const manifestBytes = new TextEncoder().encode(manifestJson);
   const combined = new Uint8Array(manifestBytes.length + bundleBytes.length);

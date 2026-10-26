@@ -5,14 +5,10 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import JSZip from 'jszip';
 import { computeHash } from './crypto.js';
-import {
-  type AegisPackage,
-  type UnpackOptions,
-  type IntegrityCheckResult,
-} from './types.js';
+import { type AegisPackage, type UnpackOptions, type IntegrityCheckResult } from './types.js';
 
 /**
  * 从 .aegis 文件解析包
@@ -21,7 +17,7 @@ export async function unpack(
   aegisPath: string,
   options: Partial<UnpackOptions> = {},
 ): Promise<AegisPackage> {
-  const { outputDir: _outputDir, verifySignature: _verifySig = true, publicKey: _publicKey } = options;
+  const { verifySignature = true, publicKey } = options;
 
   const data = readFileSync(aegisPath);
   const zip = await JSZip.loadAsync(data);
@@ -43,11 +39,21 @@ export async function unpack(
     }
   }
 
-  return {
+  const pkg: AegisPackage = {
     spec: spec as import('./types.js').AegisPackageSpec,
     files,
     source: aegisPath,
   };
+
+  if (verifySignature) {
+    const { validatePackage } = await import('./validate.js');
+    const validation = await validatePackage(pkg, { publicKey });
+    if (!validation.valid) {
+      throw new Error(`Invalid .aegis package: ${validation.errors.join('; ')}`);
+    }
+  }
+
+  return pkg;
 }
 
 /**
@@ -75,7 +81,7 @@ export function checkIntegrity(pkg: AegisPackage): IntegrityCheckResult {
 
   return {
     valid: true,
-    hash: typeof source === 'string' ? computeHash(readFileSync(source)) : computeHash(source),  
+    hash: typeof source === 'string' ? computeHash(readFileSync(source)) : computeHash(source),
   };
 }
 
@@ -86,17 +92,32 @@ export async function extract(
   pkg: AegisPackage,
   outputDir: string,
 ): Promise<{ manifestPath: string }> {
-  // 确保目录存在
-  mkdirSync(outputDir, { recursive: true });
-
-  // 写入所有文件
+  const resolvedOutputDir = resolve(outputDir);
+  const extractedFiles: Array<[string, Uint8Array]> = [];
   for (const [name, data] of pkg.files) {
-    const destPath = join(outputDir, name);
+    if (!name || name.includes('\\') || isAbsolute(name)) {
+      throw new Error(`Invalid package path: ${name}`);
+    }
+    const destPath = resolve(resolvedOutputDir, name);
+    const relativePath = relative(resolvedOutputDir, destPath);
+    if (
+      relativePath === '..' ||
+      relativePath.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`) ||
+      isAbsolute(relativePath)
+    ) {
+      throw new Error(`Package path escapes output directory: ${name}`);
+    }
+    extractedFiles.push([destPath, data]);
+  }
+
+  // 确保目录存在，全部路径验证通过后再写文件
+  mkdirSync(resolvedOutputDir, { recursive: true });
+  for (const [destPath, data] of extractedFiles) {
     mkdirSync(join(destPath, '..'), { recursive: true });
     writeFileSync(destPath, data);
   }
 
   return {
-    manifestPath: join(outputDir, 'manifest.json'),
+    manifestPath: join(resolvedOutputDir, 'manifest.json'),
   };
 }
