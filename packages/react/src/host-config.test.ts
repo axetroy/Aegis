@@ -3,6 +3,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import React from 'react';
+import { Input } from '@aegis/ui';
 import {
   createInstance,
   createTextInstance,
@@ -15,6 +17,9 @@ import {
   commitTextUpdate,
   commitMount,
   commitUnmount,
+  detachDeletedInstance,
+  getPublicInstance,
+  handleNodeMethodResult,
   setGlobalStyleSheet,
   removeGlobalStyleSheet,
   setThemeVariables,
@@ -29,7 +34,14 @@ import {
   supportsHydration,
   type AegisInstance,
 } from './host-config';
-import { NodeType, UIMessageType } from '@aegis/protocol';
+import {
+  NodeType,
+  UIMessageType,
+  type AegisInputRef,
+  type AegisViewRef,
+  type NodeRect,
+} from '@aegis/protocol';
+import { render as renderReactTree } from './index';
 
 // Mock postMessage
 const mockPostMessage = vi.fn();
@@ -346,6 +358,138 @@ describe('@aegis/react/host-config', () => {
       const lastCall = getLastCall();
       expect(lastCall[0]['type']).toBe(UIMessageType.DeleteNode);
       expect((lastCall[0]['payload'] as { id: string }).id).toBe('delete-node');
+    });
+  });
+
+  describe('logical refs', () => {
+    it('should return a stable public handle without exposing the host instance', () => {
+      const instance = createInstance('View', {});
+      const handle = getPublicInstance(instance) as AegisViewRef;
+
+      expect(handle).toBe(getPublicInstance(instance));
+      expect(handle.nodeId).toBe(instance.id);
+      expect(handle.type).toBe(NodeType.View);
+      expect(handle).not.toHaveProperty('props');
+      expect(handle).not.toHaveProperty('children');
+      expect(handle).not.toHaveProperty('focus');
+    });
+
+    it('should resolve async handle calls from matching host responses', async () => {
+      const instance = createInstance('Input', {});
+      const handle = getPublicInstance(instance) as AegisInputRef;
+      const rect: NodeRect = {
+        x: 1,
+        y: 2,
+        width: 30,
+        height: 20,
+        top: 2,
+        right: 31,
+        bottom: 22,
+        left: 1,
+      };
+
+      const result = handle.measure();
+      const request = getLastCall()[0];
+      expect(request['type']).toBe(UIMessageType.InvokeNodeMethod);
+      expect(request['payload']).toMatchObject({ nodeId: instance.id, method: 'measure' });
+      handleNodeMethodResult({
+        requestId: (request['payload'] as { requestId: string }).requestId,
+        success: true,
+        result: rect,
+      });
+
+      await expect(result).resolves.toEqual(rect);
+    });
+
+    it('should reject pending calls when the referenced node is detached', async () => {
+      const instance = createInstance('Input', {});
+      const handle = getPublicInstance(instance) as AegisInputRef;
+      const result = handle.focus();
+
+      detachDeletedInstance(instance);
+
+      await expect(result).rejects.toThrow('detached');
+      await expect(handle.focus()).rejects.toThrow('detached');
+    });
+
+    it('should reject host errors and limit concurrent calls', async () => {
+      const instance = createInstance('Input', {});
+      const handle = getPublicInstance(instance) as AegisInputRef;
+      const rejectedCall = handle.focus();
+      const request = getLastCall()[0]['payload'] as { requestId: string };
+      handleNodeMethodResult({
+        requestId: request.requestId,
+        success: false,
+        error: 'Not allowed',
+      });
+      await expect(rejectedCall).rejects.toThrow('Not allowed');
+
+      const pendingCalls = Array.from({ length: 128 }, () => handle.measure());
+      await expect(handle.measure()).rejects.toThrow('Too many pending');
+      detachDeletedInstance(instance);
+      await Promise.allSettled(pendingCalls);
+    });
+
+    it('should attach React refs, resolve host calls, and clear refs on unmount', async () => {
+      const handlers = new Set<(message: { type: string; payload?: unknown }) => void>();
+      const expectedRect: NodeRect = {
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 32,
+        top: 0,
+        right: 100,
+        bottom: 32,
+        left: 0,
+      };
+      const protocol = {
+        sendMessage: vi.fn((type: string, payload: unknown) => {
+          if (
+            type !== UIMessageType.InvokeNodeMethod ||
+            typeof payload !== 'object' ||
+            payload === null
+          )
+            return;
+          const requestId = (payload as { requestId: string }).requestId;
+          for (const handler of handlers) {
+            handler({
+              type: 'protocol',
+              payload: {
+                type: UIMessageType.NodeMethodResult,
+                payload: { requestId, success: true, result: expectedRect },
+              },
+            });
+          }
+        }),
+        onMessage: (handler: (message: { type: string; payload?: unknown }) => void) => {
+          handlers.add(handler);
+          return () => handlers.delete(handler);
+        },
+      };
+      const workerSelf = self as unknown as { __aegis_protocol?: typeof protocol };
+      const previousProtocol = workerSelf.__aegis_protocol;
+      workerSelf.__aegis_protocol = protocol;
+
+      const ref = React.createRef<AegisInputRef>();
+      const unmount = renderReactTree(
+        React.createElement(Input, {
+          ref,
+          placeholder: 'Search',
+        }),
+      );
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(ref.current?.nodeId).toBeTruthy();
+        expect(ref.current?.type).toBe(NodeType.Input);
+        await expect(ref.current?.measure()).resolves.toEqual(expectedRect);
+
+        unmount();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(ref.current).toBeNull();
+      } finally {
+        workerSelf.__aegis_protocol = previousProtocol;
+      }
     });
   });
 

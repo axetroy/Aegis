@@ -4,7 +4,16 @@
  * React Reconciler 的 host config 实现
  */
 
-import { NodeType, generateId, createMessage, UIMessageType } from '@aegis/protocol';
+import {
+  NodeType,
+  generateId,
+  createMessage,
+  UIMessageType,
+  type AegisFocusableRef,
+  type AegisNodeRef,
+  type NodeMethod,
+  type NodeRect,
+} from '@aegis/protocol';
 
 interface RootContainerInfo {
   appId: string;
@@ -17,6 +26,19 @@ interface AegisProtocol {
 
 const instances = new Map<string, AegisInstance>();
 const eventHandlers = new Map<string, (data?: unknown) => void>();
+const publicInstances = new WeakMap<AegisInstance, AegisNodeRef | AegisFocusableRef>();
+const nodeMethodRequests = new Map<
+  string,
+  {
+    nodeId: string;
+    resolve: (value: unknown) => void;
+    reject: (reason: Error) => void;
+    timeout: ReturnType<typeof setTimeout>;
+  }
+>();
+
+const NODE_METHOD_TIMEOUT = 10_000;
+const MAX_PENDING_NODE_METHODS = 128;
 
 function sendMessage(type: string, payload: Record<string, unknown>): void {
   const protocol = (self as unknown as { __aegis_protocol?: AegisProtocol }).__aegis_protocol;
@@ -58,7 +80,12 @@ function isSafeThemeValue(value: string): boolean {
 }
 
 function toProtocolValue(value: unknown): unknown {
-  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
     return value;
   }
   if (Array.isArray(value)) return value.map(toProtocolValue).filter((item) => item !== undefined);
@@ -97,6 +124,76 @@ export function dispatchAegisEvent(payload: unknown): void {
   const handlerId = String(payload.handlerId);
   const handler = eventHandlers.get(handlerId);
   if (handler) handler('data' in payload ? payload.data : undefined);
+}
+
+function invokeNodeMethod<T>(nodeId: string, method: NodeMethod): Promise<T> {
+  if (!instances.has(nodeId)) {
+    return Promise.reject(new Error('Aegis node has been detached'));
+  }
+  if (nodeMethodRequests.size >= MAX_PENDING_NODE_METHODS) {
+    return Promise.reject(new Error('Too many pending Aegis node method calls'));
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const requestId = generateId();
+    const timeout = setTimeout(() => {
+      nodeMethodRequests.delete(requestId);
+      reject(new Error(`Aegis node method timed out: ${method}`));
+    }, NODE_METHOD_TIMEOUT);
+
+    nodeMethodRequests.set(requestId, {
+      nodeId,
+      resolve: (value) => resolve(value as T),
+      reject,
+      timeout,
+    });
+    try {
+      sendMessage(UIMessageType.InvokeNodeMethod, { requestId, nodeId, method });
+    } catch (error) {
+      clearTimeout(timeout);
+      nodeMethodRequests.delete(requestId);
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
+}
+
+export function handleNodeMethodResult(payload: unknown): void {
+  if (
+    typeof payload !== 'object' ||
+    payload === null ||
+    !('requestId' in payload) ||
+    typeof payload.requestId !== 'string'
+  ) {
+    return;
+  }
+  const requestId = payload.requestId;
+  const request = nodeMethodRequests.get(requestId);
+  if (!request) return;
+
+  clearTimeout(request.timeout);
+  nodeMethodRequests.delete(requestId);
+
+  if ('success' in payload && payload.success === true) {
+    request.resolve('result' in payload ? payload.result : undefined);
+  } else {
+    const error = 'error' in payload ? String(payload.error) : 'Aegis node method failed';
+    request.reject(new Error(error));
+  }
+}
+
+function releaseInstance(instance: AegisInstance): void {
+  instances.delete(instance.id);
+  for (const handlerId of eventHandlers.keys()) {
+    if (handlerId === `${instance.id}-click` || handlerId === `${instance.id}-input`) {
+      eventHandlers.delete(handlerId);
+    }
+  }
+  for (const [requestId, request] of nodeMethodRequests) {
+    if (request.nodeId !== instance.id) continue;
+    clearTimeout(request.timeout);
+    nodeMethodRequests.delete(requestId);
+    request.reject(new Error('Aegis node has been detached'));
+  }
 }
 
 // Aegis 实例类型
@@ -163,7 +260,11 @@ export function appendInitialChild(parent: AegisInstance, child: AegisInstance):
 }
 
 // 插入子节点
-export function insertBefore(parent: AegisInstance, child: AegisInstance, beforeChild: AegisInstance): void {
+export function insertBefore(
+  parent: AegisInstance,
+  child: AegisInstance,
+  beforeChild: AegisInstance,
+): void {
   if (child.parent) removeChild(child.parent, child);
   const index = parent.children.indexOf(beforeChild.id);
   if (index !== -1) {
@@ -213,7 +314,10 @@ export function removeChildFromContainer(container: RootContainerInfo, child: Ae
 }
 
 export function resetAfterCommit(container: RootContainerInfo): void {
-  const nodes: Record<string, { id: string; type: NodeType; props: Record<string, unknown>; children: string[] }> = {};
+  const nodes: Record<
+    string,
+    { id: string; type: NodeType; props: Record<string, unknown>; children: string[] }
+  > = {};
   eventHandlers.clear();
 
   const collect = (id: string): void => {
@@ -245,7 +349,7 @@ export const supportsMutation = true;
 export function finalizeInitialChildren(
   _instance: AegisInstance,
   _type: string,
-  _props: Record<string, unknown>
+  _props: Record<string, unknown>,
 ): boolean {
   return false;
 }
@@ -345,6 +449,7 @@ export function commitUnmount(instance: AegisInstance): void {
   sendMessage(UIMessageType.DeleteNode, {
     id: instance.id,
   });
+  releaseInstance(instance);
 }
 
 // 获取父节点
@@ -413,22 +518,50 @@ export function getCurrentUpdatePriority(): number {
   return 2;
 }
 
+export function resolveEventTimeStamp(): number {
+  return now();
+}
+
+export function resolveEventType(): null {
+  return null;
+}
+
 export function setCurrentUpdatePriority(_priority: number): void {}
 
 export function shouldSetTextContent(_type: string, _props: Record<string, unknown>): boolean {
   return false;
 }
 
-export function getRootHostContext(): null {
-  return null;
+export function getRootHostContext(): Record<string, never> {
+  return {};
 }
 
-export function getChildHostContext(): null {
-  return null;
+export function getChildHostContext(): Record<string, never> {
+  return {};
 }
 
-export function getPublicInstance(instance: unknown): unknown {
-  return instance;
+export function trackSchedulerEvent(): void {}
+
+export function getPublicInstance(instance: AegisInstance): unknown {
+  const cached = publicInstances.get(instance);
+  if (cached) return cached;
+
+  const handle: AegisNodeRef | AegisFocusableRef = {
+    nodeId: instance.id,
+    type: instance.type,
+    measure: () => invokeNodeMethod<NodeRect>(instance.id, 'measure'),
+  };
+
+  if (instance.type === NodeType.Input || instance.type === NodeType.Button) {
+    Object.assign(handle, {
+      focus: () => invokeNodeMethod<void>(instance.id, 'focus'),
+      blur: () => invokeNodeMethod<void>(instance.id, 'blur'),
+    });
+  }
+
+  const publicHandle = Object.freeze(handle);
+  publicInstances.set(instance, publicHandle);
+  return publicHandle;
 }
 
 export function prepareForCommit(): null {
@@ -443,7 +576,9 @@ export function getInstanceFromScope(): null {
   return null;
 }
 
-export function detachDeletedInstance(): void {}
+export function detachDeletedInstance(instance: AegisInstance): void {
+  releaseInstance(instance);
+}
 
 export function maySuspendCommit(): boolean {
   return false;

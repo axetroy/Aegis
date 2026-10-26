@@ -8,6 +8,7 @@ import React from 'react';
 import { ButtonProps } from '../types';
 
 export const Button: React.FC<ButtonProps> = ({
+  ref,
   style,
   children,
   disabled,
@@ -16,6 +17,7 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   return (
     <button
+      ref={ref as unknown as React.Ref<HTMLButtonElement>}
       style={{
         display: 'flex',
         alignItems: 'center',

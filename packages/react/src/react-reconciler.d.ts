@@ -23,6 +23,9 @@ declare module 'react-reconciler' {
     insertInContainerBefore(containerInfo: C, child: I, beforeChild: I): void;
     removeChildFromContainer(containerInfo: C, child: I): void;
     scheduleMicrotask(callback: () => void): void;
+    trackSchedulerEvent(): void;
+    resolveEventTimeStamp(): number;
+    resolveEventType(): string | null;
     supportsMutation: boolean;
     supportsHydration: boolean;
   }
@@ -39,7 +42,12 @@ declare module 'react-reconciler' {
       onRecoverableError: (error: unknown) => void,
       onDefaultTransitionIndicator: unknown,
     ): unknown;
-    updateContainer(element: ReactNode | null, container: unknown, parentComponent: unknown, callback: () => void): unknown;
+    updateContainer(
+      element: ReactNode | null,
+      container: unknown,
+      parentComponent: unknown,
+      callback: () => void,
+    ): unknown;
   };
 
   export type Instance = HostConfig<unknown, unknown, unknown, unknown, unknown>;

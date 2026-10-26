@@ -9,14 +9,10 @@ import { ViewProps } from '../types';
 
 export type { ViewProps };
 
-export const View: React.FC<ViewProps> = ({
-  style,
-  children,
-  onClick,
-  ...props
-}) => {
+export const View: React.FC<ViewProps> = ({ ref, style, children, onClick, ...props }) => {
   return (
     <div
+      ref={ref as unknown as React.Ref<HTMLDivElement>}
       style={{
         display: 'flex',
         flexDirection: 'column',

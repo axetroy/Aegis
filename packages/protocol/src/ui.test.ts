@@ -46,6 +46,8 @@ describe('@aegis/protocol/ui', () => {
       expect(UIMessageType.SetGlobalStyleSheet).toBe('ui:set-global-stylesheet');
       expect(UIMessageType.RemoveGlobalStyleSheet).toBe('ui:remove-global-stylesheet');
       expect(UIMessageType.SetThemeVariables).toBe('ui:set-theme-variables');
+      expect(UIMessageType.InvokeNodeMethod).toBe('ui:invoke-node-method');
+      expect(UIMessageType.NodeMethodResult).toBe('ui:node-method-result');
 
       // Host -> Worker
       expect(UIMessageType.NodeCreated).toBe('ui:node-created');

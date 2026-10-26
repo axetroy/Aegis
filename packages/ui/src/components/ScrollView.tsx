@@ -1,7 +1,9 @@
 import React from 'react';
+import type { AegisScrollViewRef } from '@aegis/protocol';
 import { BaseStyle } from '../types';
 
 export interface ScrollViewProps {
+  ref?: React.Ref<AegisScrollViewRef>;
   style?: BaseStyle;
   children?: React.ReactNode;
   onScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
@@ -11,6 +13,7 @@ export interface ScrollViewProps {
 }
 
 export const ScrollView: React.FC<ScrollViewProps> = ({
+  ref,
   style,
   children,
   onScroll,
@@ -19,6 +22,7 @@ export const ScrollView: React.FC<ScrollViewProps> = ({
 }) => {
   return (
     <div
+      ref={ref as unknown as React.Ref<HTMLDivElement>}
       style={{
         overflow: 'auto',
         flex: 1,

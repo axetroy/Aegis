@@ -52,13 +52,47 @@ export enum UIMessageType {
   SetGlobalStyleSheet = 'ui:set-global-stylesheet',
   RemoveGlobalStyleSheet = 'ui:remove-global-stylesheet',
   SetThemeVariables = 'ui:set-theme-variables',
+  InvokeNodeMethod = 'ui:invoke-node-method',
 
   // Host -> Worker
   NodeCreated = 'ui:node-created',
   NodeUpdated = 'ui:node-updated',
   NodeDeleted = 'ui:node-deleted',
+  NodeMethodResult = 'ui:node-method-result',
   Error = 'ui:error',
 }
+
+export type NodeMethod = 'measure' | 'focus' | 'blur';
+
+export interface NodeRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export interface AegisNodeRef<T extends NodeType = NodeType> {
+  readonly nodeId: string;
+  readonly type: T;
+  measure(): Promise<NodeRect>;
+}
+
+export interface AegisFocusableRef<
+  T extends NodeType = NodeType.Input | NodeType.Button,
+> extends AegisNodeRef<T> {
+  focus(): Promise<void>;
+  blur(): Promise<void>;
+}
+
+export type AegisViewRef = AegisNodeRef<NodeType.View>;
+export type AegisTextRef = AegisNodeRef<NodeType.Text>;
+export type AegisButtonRef = AegisFocusableRef<NodeType.Button>;
+export type AegisInputRef = AegisFocusableRef<NodeType.Input>;
+export type AegisScrollViewRef = AegisNodeRef<NodeType.ScrollView>;
 
 // 基础消息
 export interface BaseMessage {
@@ -136,6 +170,15 @@ export interface SetThemeVariablesMessage extends BaseMessage {
   };
 }
 
+export interface InvokeNodeMethodMessage extends BaseMessage {
+  type: UIMessageType.InvokeNodeMethod;
+  payload: {
+    requestId: string;
+    nodeId: string;
+    method: NodeMethod;
+  };
+}
+
 // Host -> Worker 消息
 export interface NodeCreatedMessage extends BaseMessage {
   type: UIMessageType.NodeCreated;
@@ -164,6 +207,16 @@ export interface NodeDeletedMessage extends BaseMessage {
   };
 }
 
+export interface NodeMethodResultMessage extends BaseMessage {
+  type: UIMessageType.NodeMethodResult;
+  payload: {
+    requestId: string;
+    success: boolean;
+    result?: NodeRect;
+    error?: string;
+  };
+}
+
 export interface ErrorMessage extends BaseMessage {
   type: UIMessageType.Error;
   payload: {
@@ -183,9 +236,11 @@ export type UIMessage =
   | SetGlobalStyleSheetMessage
   | RemoveGlobalStyleSheetMessage
   | SetThemeVariablesMessage
+  | InvokeNodeMethodMessage
   | NodeCreatedMessage
   | NodeUpdatedMessage
   | NodeDeletedMessage
+  | NodeMethodResultMessage
   | ErrorMessage;
 
 // 消息创建辅助函数

@@ -7,12 +7,7 @@
 import React from 'react';
 import { TextProps } from '../types';
 
-export const Text: React.FC<TextProps> = ({
-  style,
-  children,
-  numberOfLines,
-  ...props
-}) => {
+export const Text: React.FC<TextProps> = ({ ref, style, children, numberOfLines, ...props }) => {
   const textStyle: React.CSSProperties = {
     fontSize: 16,
     lineHeight: '24px',
@@ -29,7 +24,7 @@ export const Text: React.FC<TextProps> = ({
   }
 
   return (
-    <span style={textStyle} {...props}>
+    <span ref={ref as unknown as React.Ref<HTMLSpanElement>} style={textStyle} {...props}>
       {children}
     </span>
   );

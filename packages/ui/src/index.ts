@@ -15,10 +15,5 @@ export { List, FlatList } from './components/List';
 export { CapabilityPrompt } from './components/CapabilityPrompt';
 
 // 类型导出
-export type {
-  ViewProps,
-  TextProps,
-  ButtonProps,
-  InputProps,
-  BaseStyle,
-} from './types';
+export type { ViewProps, TextProps, ButtonProps, InputProps, BaseStyle } from './types';
+export type { ScrollViewProps } from './components/ScrollView';

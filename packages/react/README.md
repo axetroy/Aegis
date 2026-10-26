@@ -36,8 +36,7 @@ import { GlobalStyleSheet, setThemeVariables } from '@aegis/react';
 
 function App() {
   useEffect(() => {
-    setThemeVariables({ '
-    --brand-color': '#157f6b' });
+    setThemeVariables({ '--brand-color': '#157f6b' });
   }, []);
 
   return (
@@ -54,3 +53,30 @@ function App() {
 ```
 
 支持选择器、伪类、媒体查询和 keyframes。出于隔离与资源安全，`@import`、`@font-face`、`:host`、`::slotted`、`url()`、`image-set()` 和 `paint()` 会被拒绝；单张样式表上限为 64 KiB，每个应用最多 32 张。
+
+## 节点 Ref
+
+Host 节点的 `ref` 指向 Aegis 逻辑句柄，不是 DOM 元素。操作通过 Host 协议异步执行：
+
+```tsx
+import React from 'react';
+import { Input } from '@aegis/ui';
+import type { AegisInputRef } from '@aegis/protocol';
+
+function SearchBox() {
+  const inputRef = React.useRef<AegisInputRef | null>(null);
+
+  return (
+    <Input
+      ref={inputRef}
+      placeholder="搜索"
+      onFocus={async () => {
+        const bounds = await inputRef.current?.measure();
+        console.log(bounds);
+      }}
+    />
+  );
+}
+```
+
+所有节点句柄支持 `measure()` 并返回 Promise；Input 和 Button 另外支持异步 `focus()` / `blur()`。句柄只包含只读节点 ID 和类型，不暴露 DOM 或内部实例。节点卸载后，未完成的调用会以错误结束。

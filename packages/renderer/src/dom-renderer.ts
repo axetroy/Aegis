@@ -7,8 +7,10 @@
 import {
   UIMessageType,
   EventMessageType,
+  NodeType,
   type NodeProps,
-  type NodeType,
+  type NodeMethod,
+  type NodeRect,
   generateId,
 } from '@aegis/protocol';
 import { isSafeCssValue, sanitizeStyleSheet } from './style-sheet-policy';
@@ -17,6 +19,7 @@ import { isSafeCssValue, sanitizeStyleSheet } from './style-sheet-policy';
 interface NodeMap {
   [id: string]: {
     dom: HTMLElement;
+    type: NodeType;
     props: Record<string, unknown>;
   };
 }
@@ -81,7 +84,8 @@ export class AegisDOMRenderer {
   constructor(config: RendererConfig) {
     this.config = config;
     this.rootId = `aegis-root-${config.appId}`;
-    this.shadowRoot = config.container.shadowRoot ?? config.container.attachShadow({ mode: 'open' });
+    this.shadowRoot =
+      config.container.shadowRoot ?? config.container.attachShadow({ mode: 'open' });
     this.messageHandler = (event) => {
       if (event.data && event.data.type) this.handleMessage(event.data);
     };
@@ -103,6 +107,7 @@ export class AegisDOMRenderer {
     // 注册根节点
     this.nodes[this.rootId] = {
       dom: root,
+      type: NodeType.View,
       props: {},
     };
   }
@@ -119,19 +124,27 @@ export class AegisDOMRenderer {
         this.createNode(message.payload as unknown as NodeProps & { parentId?: string });
         break;
       case UIMessageType.UpdateNode:
-        this.updateNode(message.payload as unknown as { id: string; props: Record<string, unknown> });
+        this.updateNode(
+          message.payload as unknown as { id: string; props: Record<string, unknown> },
+        );
         break;
       case UIMessageType.DeleteNode:
         this.deleteNode(message.payload as unknown as { id: string });
         break;
       case UIMessageType.InsertNode:
-        this.insertNode(message.payload as unknown as { parentId: string; node: NodeProps; index: number });
+        this.insertNode(
+          message.payload as unknown as { parentId: string; node: NodeProps; index: number },
+        );
         break;
       case UIMessageType.MoveNode:
-        this.moveNode(message.payload as unknown as { nodeId: string; newParentId: string; index: number });
+        this.moveNode(
+          message.payload as unknown as { nodeId: string; newParentId: string; index: number },
+        );
         break;
       case UIMessageType.SyncTree:
-        this.syncTree(message.payload as unknown as { root: NodeProps; nodes: Record<string, NodeProps> });
+        this.syncTree(
+          message.payload as unknown as { root: NodeProps; nodes: Record<string, NodeProps> },
+        );
         break;
       case UIMessageType.SetGlobalStyleSheet:
         this.setGlobalStyleSheet(message.payload as { styleSheetId: string; cssText: string });
@@ -140,7 +153,14 @@ export class AegisDOMRenderer {
         this.removeGlobalStyleSheet(message.payload as { styleSheetId: string });
         break;
       case UIMessageType.SetThemeVariables:
-        this.setThemeVariables(message.payload as { variables: Record<string, string | number | null> });
+        this.setThemeVariables(
+          message.payload as { variables: Record<string, string | number | null> },
+        );
+        break;
+      case UIMessageType.InvokeNodeMethod:
+        this.invokeNodeMethod(
+          message.payload as { requestId: string; nodeId: string; method: NodeMethod },
+        );
         break;
     }
   }
@@ -174,7 +194,12 @@ export class AegisDOMRenderer {
   }
 
   private setThemeVariables(payload: { variables: Record<string, string | number | null> }): void {
-    if (!payload.variables || typeof payload.variables !== 'object' || Array.isArray(payload.variables)) return;
+    if (
+      !payload.variables ||
+      typeof payload.variables !== 'object' ||
+      Array.isArray(payload.variables)
+    )
+      return;
 
     for (const [name, value] of Object.entries(payload.variables)) {
       if (!name.startsWith('--')) continue;
@@ -184,7 +209,8 @@ export class AegisDOMRenderer {
       } else if (isSafeCssValue(String(value))) {
         const cssValue = String(value);
         if (cssValue.length > MAX_THEME_VALUE_LENGTH) continue;
-        if (!this.themeVariables.has(name) && this.themeVariables.size >= MAX_THEME_VARIABLES) continue;
+        if (!this.themeVariables.has(name) && this.themeVariables.size >= MAX_THEME_VARIABLES)
+          continue;
         this.themeVariables.set(name, cssValue);
         this.rootElement.style.setProperty(name, cssValue);
       }
@@ -193,6 +219,64 @@ export class AegisDOMRenderer {
 
   private applyThemeVariables(element: HTMLElement): void {
     for (const [name, value] of this.themeVariables) element.style.setProperty(name, value);
+  }
+
+  private invokeNodeMethod(payload: {
+    requestId: string;
+    nodeId: string;
+    method: NodeMethod;
+  }): void {
+    const { requestId, nodeId, method } = payload;
+    if (typeof requestId !== 'string' || typeof nodeId !== 'string') return;
+
+    const respond = (success: boolean, result?: NodeRect, error?: string): void => {
+      const message = {
+        type: UIMessageType.NodeMethodResult,
+        id: generateId(),
+        timestamp: Date.now(),
+        payload: { requestId, success, result, error },
+      };
+      if (this.config.onEvent) this.config.onEvent(message);
+      else window.postMessage(message);
+    };
+
+    const node = this.nodes[nodeId];
+    if (!node) {
+      respond(false, undefined, 'Aegis node is not mounted');
+      return;
+    }
+
+    try {
+      switch (method) {
+        case 'measure': {
+          const rect = node.dom.getBoundingClientRect();
+          respond(true, {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            left: rect.left,
+          });
+          return;
+        }
+        case 'focus':
+        case 'blur':
+          if (node.type !== NodeType.Input && node.type !== NodeType.Button) {
+            respond(false, undefined, `Aegis node does not support ${method}`);
+            return;
+          }
+          node.dom[method]();
+          respond(true);
+          return;
+        default:
+          respond(false, undefined, 'Unsupported Aegis node method');
+      }
+    } catch (error) {
+      respond(false, undefined, error instanceof Error ? error.message : String(error));
+    }
   }
 
   // 创建节点
@@ -206,7 +290,7 @@ export class AegisDOMRenderer {
     dom.id = id;
 
     // 注册节点
-    this.nodes[id] = { dom, props };
+    this.nodes[id] = { dom, type, props };
 
     // 添加事件监听
     this.addEventListeners(id, dom, props);
@@ -313,12 +397,19 @@ export class AegisDOMRenderer {
   }
 
   // 添加事件监听
-  private addEventListeners(nodeId: string, element: HTMLElement, props: Record<string, unknown>): void {
+  private addEventListeners(
+    nodeId: string,
+    element: HTMLElement,
+    props: Record<string, unknown>,
+  ): void {
     // 点击事件
     if (props['onClick']) {
       const handler = (event: Event) => {
         event.preventDefault();
-        this.sendEvent(nodeId, 'click', { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY });
+        this.sendEvent(nodeId, 'click', {
+          x: (event as MouseEvent).clientX,
+          y: (event as MouseEvent).clientY,
+        });
       };
       element.addEventListener('click', handler);
       this.eventHandlers.set(`${nodeId}-click`, handler);
@@ -454,13 +545,14 @@ export class AegisDOMRenderer {
     // 注册根容器
     this.nodes[this.rootId] = {
       dom: rootContainer,
+      type: NodeType.View,
       props: {},
     };
 
     const createTreeNode = (nodeProps: NodeProps): HTMLElement => {
       const dom = this.createElement(nodeProps.type, nodeProps.props);
       dom.id = nodeProps.id;
-      this.nodes[nodeProps.id] = { dom, props: nodeProps.props };
+      this.nodes[nodeProps.id] = { dom, type: nodeProps.type, props: nodeProps.props };
       this.addEventListeners(nodeProps.id, dom, nodeProps.props);
       for (const childId of nodeProps.children ?? []) {
         const childProps = nodes[childId];
@@ -487,7 +579,12 @@ export class AegisDOMRenderer {
   }
 
   // 发送响应
-  private sendResponse(type: UIMessageType, nodeId: string, success: boolean, error?: string): void {
+  private sendResponse(
+    type: UIMessageType,
+    nodeId: string,
+    success: boolean,
+    error?: string,
+  ): void {
     const responseType =
       type === UIMessageType.CreateNode
         ? UIMessageType.NodeCreated

@@ -11,9 +11,15 @@ export * from './host-config';
 
 // React Hooks 扩展
 import React from 'react';
+import { UIMessageType } from '@aegis/protocol';
 import ReactReconciler, { type Instance as HostConfig } from 'react-reconciler';
 import * as AegisHostConfig from './host-config';
-import { dispatchAegisEvent, removeGlobalStyleSheet, setGlobalStyleSheet } from './host-config';
+import {
+  dispatchAegisEvent,
+  handleNodeMethodResult,
+  removeGlobalStyleSheet,
+  setGlobalStyleSheet,
+} from './host-config';
 
 const reconciler = ReactReconciler(AegisHostConfig as unknown as HostConfig);
 
@@ -47,8 +53,11 @@ export function render(element: React.ReactElement): () => void {
   const protocol = (self as unknown as { __aegis_protocol?: ProtocolChannel }).__aegis_protocol;
   const unsubscribe = protocol?.onMessage((message) => {
     if (message.type !== 'protocol' || !isRecord(message.payload)) return;
-    if (message.payload['type'] !== 'event:dispatch') return;
-    dispatchAegisEvent(message.payload['payload']);
+    if (message.payload['type'] === 'event:dispatch') {
+      dispatchAegisEvent(message.payload['payload']);
+    } else if (message.payload['type'] === UIMessageType.NodeMethodResult) {
+      handleNodeMethodResult(message.payload['payload']);
+    }
   });
 
   reconciler.updateContainer(element, container, null, () => undefined);

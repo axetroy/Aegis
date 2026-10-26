@@ -1,7 +1,9 @@
 import React from 'react';
+import type { AegisInputRef } from '@aegis/protocol';
 import { BaseStyle } from '../types';
 
 export interface InputProps {
+  ref?: React.Ref<AegisInputRef>;
   style?: BaseStyle & {
     fontSize?: number;
     placeholderColor?: string;
@@ -20,6 +22,7 @@ export interface InputProps {
 }
 
 export const Input: React.FC<InputProps> = ({
+  ref,
   style,
   value,
   placeholder,
@@ -39,6 +42,7 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <input
+      ref={ref as unknown as React.Ref<HTMLInputElement>}
       type={inputType}
       value={value}
       placeholder={placeholder}

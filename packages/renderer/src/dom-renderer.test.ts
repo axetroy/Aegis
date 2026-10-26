@@ -10,11 +10,13 @@ import { NodeType, UIMessageType } from '@aegis/protocol';
 describe('@aegis/renderer/dom-renderer', () => {
   let container: HTMLDivElement;
   let renderer: AegisDOMRenderer;
+  let onEvent: ReturnType<typeof vi.fn>;
 
   const queryApp = <T extends Element = Element>(selector: string): T | null =>
     renderer.shadowRoot.querySelector<T>(selector);
 
   beforeEach(() => {
+    onEvent = vi.fn();
     container = document.createElement('div');
     container.id = 'test-container';
     document.body.appendChild(container);
@@ -22,6 +24,7 @@ describe('@aegis/renderer/dom-renderer', () => {
     const config: RendererConfig = {
       container,
       appId: 'test-app',
+      onEvent,
     };
     renderer = createRenderer(config);
   });
@@ -148,6 +151,80 @@ describe('@aegis/renderer/dom-renderer', () => {
 
       expect(container.shadowRoot?.querySelector('style')).toBeNull();
       expect(container.shadowRoot?.querySelector('[data-aegis-app]')).toBeNull();
+    });
+  });
+
+  describe('logical node methods', () => {
+    it('should return serializable bounds for measure requests', () => {
+      renderer.handleMessage({
+        type: UIMessageType.CreateNode,
+        payload: {
+          id: 'measured-node',
+          type: NodeType.View,
+          props: {},
+          children: [],
+        },
+      });
+      const node = queryApp<HTMLElement>('#measured-node');
+      if (!node) throw new Error('Expected measured node');
+      vi.spyOn(node, 'getBoundingClientRect').mockReturnValue(new DOMRect(1, 2, 30, 20));
+
+      renderer.handleMessage({
+        type: UIMessageType.InvokeNodeMethod,
+        payload: { requestId: 'measure-1', nodeId: 'measured-node', method: 'measure' },
+      });
+
+      expect(onEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: UIMessageType.NodeMethodResult,
+          payload: {
+            requestId: 'measure-1',
+            success: true,
+            result: {
+              x: 1,
+              y: 2,
+              width: 30,
+              height: 20,
+              top: 2,
+              right: 31,
+              bottom: 22,
+              left: 1,
+            },
+            error: undefined,
+          },
+        }),
+      );
+    });
+
+    it('should support focus on inputs and reject unsupported node methods', () => {
+      renderer.handleMessage({
+        type: UIMessageType.CreateNode,
+        payload: { id: 'ref-input', type: NodeType.Input, props: {}, children: [] },
+      });
+      const input = queryApp<HTMLInputElement>('#ref-input');
+      if (!input) throw new Error('Expected input node');
+
+      renderer.handleMessage({
+        type: UIMessageType.InvokeNodeMethod,
+        payload: { requestId: 'focus-1', nodeId: 'ref-input', method: 'focus' },
+      });
+      expect(renderer.shadowRoot.activeElement).toBe(input);
+
+      renderer.handleMessage({
+        type: UIMessageType.CreateNode,
+        payload: { id: 'ref-view', type: NodeType.View, props: {}, children: [] },
+      });
+      renderer.handleMessage({
+        type: UIMessageType.InvokeNodeMethod,
+        payload: { requestId: 'focus-2', nodeId: 'ref-view', method: 'focus' },
+      });
+
+      expect(onEvent).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          type: UIMessageType.NodeMethodResult,
+          payload: expect.objectContaining({ requestId: 'focus-2', success: false }),
+        }),
+      );
     });
   });
 
