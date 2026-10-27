@@ -77,7 +77,7 @@ export class AegisModuleLoader implements ModuleLoader {
 
       return loadedModule;
     } catch (error) {
-      throw new Error(`Failed to load package ${moduleId}: ${error}`);
+      throw new Error(`Failed to load package ${moduleId}: ${error}`, { cause: error });
     }
   }
 
@@ -215,7 +215,14 @@ export class AegisModuleLoader implements ModuleLoader {
         });
       `;
 
-      let factory: Function;
+      type ModuleFactory = (
+        module: { exports: Record<string, unknown> },
+        exports: Record<string, unknown>,
+        require: (depId: string) => unknown,
+        global: typeof globalShim
+      ) => void;
+
+      let factory: ModuleFactory;
       try {
         factory = new Function(fnBody)();
       } catch {
@@ -229,7 +236,7 @@ export class AegisModuleLoader implements ModuleLoader {
       // 返回 module.exports（处理 module.exports = {...} 赋值情况）
       return module.exports;
     } catch (error) {
-      throw new Error(`Failed to execute module ${moduleId}: ${error}`);
+      throw new Error(`Failed to execute module ${moduleId}: ${error}`, { cause: error });
     }
   }
 }
