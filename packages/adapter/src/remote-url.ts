@@ -80,9 +80,9 @@ export class RemoteURLAdapter implements AegisAdapter {
       return packageCode;
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error(`Request timeout after ${config.timeout || this.defaultTimeout}ms`);
+        throw new Error(`Request timeout after ${config.timeout || this.defaultTimeout}ms`, { cause: error });
       }
-      throw new Error(`Failed to load remote package: ${error}`);
+      throw new Error(`Failed to load remote package: ${error}`, { cause: error });
     }
   }
 

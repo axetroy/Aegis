@@ -3,30 +3,31 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Container, ContainerState } from '../src/index.js';
-import type { ContainerConfig } from '../src/index.js';
+import { Container, ContainerState, type ContainerConfig } from '../src/index.js';
 
 // Track Worker instances created during tests
-let lastWorkerInstance: any = null;
+const workerInstances: MockWorker[] = [];
+
+type MockMessageListener = (event: { data: unknown }) => void;
 
 // Mock global Worker
 class MockWorker {
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners = new Map<string, MockMessageListener[]>();
   postMessage = vi.fn();
   terminate = vi.fn();
 
   constructor(_url?: string | URL, _opts?: WorkerOptions) {
-    lastWorkerInstance = this;
+    workerInstances.push(this);
   }
 
-  addEventListener(type: string, listener: Function) {
+  addEventListener(type: string, listener: MockMessageListener) {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, []);
     }
     this.listeners.get(type)!.push(listener);
   }
 
-  removeEventListener(type: string, listener: Function) {
+  removeEventListener(type: string, listener: MockMessageListener) {
     const list = this.listeners.get(type);
     if (list) {
       const index = list.indexOf(listener);
@@ -60,7 +61,7 @@ describe('Container', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    lastWorkerInstance = null;
+    workerInstances.length = 0;
     config = {
       appId: 'test-app',
       manifest: {
@@ -85,7 +86,7 @@ describe('Container', () => {
     await container.initialize();
 
     expect(container.state).toBe(ContainerState.Running);
-    expect(lastWorkerInstance).not.toBeNull();
+    expect(workerInstances).toHaveLength(1);
   });
 
   it('should throw when initializing from non-created state', async () => {
@@ -101,7 +102,7 @@ describe('Container', () => {
 
     container.postMessage({ type: 'test' });
 
-    expect(lastWorkerInstance.postMessage).toHaveBeenCalled();
+    expect(workerInstances[0]?.postMessage).toHaveBeenCalled();
   });
 
   it('should register message handler', async () => {
@@ -112,7 +113,7 @@ describe('Container', () => {
     await container.initialize();
 
     // 模拟 Worker 发送消息
-    lastWorkerInstance.simulateMessage({ type: 'test', payload: {} });
+    workerInstances[0]?.simulateMessage({ type: 'test', payload: {} });
 
     expect(handler).toHaveBeenCalled();
   });
@@ -123,7 +124,7 @@ describe('Container', () => {
     await container.destroy();
 
     expect(container.state).toBe(ContainerState.Destroyed);
-    expect(lastWorkerInstance.terminate).toHaveBeenCalled();
+    expect(workerInstances[0]?.terminate).toHaveBeenCalled();
   });
 
   it('should track resource usage', async () => {

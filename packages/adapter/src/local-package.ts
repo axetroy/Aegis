@@ -72,7 +72,7 @@ export class LocalPackageAdapter implements AegisAdapter {
 
       return packageCode;
     } catch (error) {
-      throw new Error(`Failed to load local package: ${error}`);
+      throw new Error(`Failed to load local package: ${error}`, { cause: error });
     }
   }
 

@@ -60,7 +60,7 @@ export class FileSystemAdapter implements AegisAdapter {
         signature: undefined,
       };
     } catch (error) {
-      throw new Error(`Failed to load from virtual filesystem: ${error}`);
+      throw new Error(`Failed to load from virtual filesystem: ${error}`, { cause: error });
     }
   }
 
