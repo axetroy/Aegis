@@ -2,14 +2,15 @@
 
 [↑ 返回 Aegis 设计索引](../SKILL.md) · [← 上一篇](./roadmap-vision.md)
 
-本仓库处于实现阶段。README 与路线图记录了当前的部分实现：Worker UI 演示、React 与能力模块、Storage、策略和包签名已存在；React Worker 渲染闭环、Host 网络代理、模块加载器及阶段四平台能力仍未完成。
+本仓库处于实现阶段。阶段一已具备 `.aegis` React 计数器的 Worker → SDK → Protocol → Host Renderer 演示；阶段二仍缺 Host 网络 transport、Camera/Location 实现，阶段三基础 loader 尚未接入应用启动链路。
 
 ## 当前仓库状态
 
 - 当前仓库的主入口是 [`.agents/skills/aegis-design-index/SKILL.md`](../SKILL.md)
 - 详细设计已经按主题拆分到 [Aegis 设计参考索引](./README.md)
-- `packages/` 已包含协议、运行时、React、渲染、UI、安全、能力与打包模块；`packages/loader/` 目前仅导出类型
-- `apps/` 当前包含宿主和 Playground；React Worker 闭环、Host 网络代理及 Inspector、DevTools、多应用平台尚未落地
+- `packages/` 已包含协议、运行时、React、渲染、UI、安全、能力、loader 与打包模块；loader 有基础执行与缓存逻辑，但未接入 Worker 启动
+- `apps/playground` 会构建宿主提供的 `aegis-sdk` ESM bundle，并运行外部 `.aegis` React 应用；Worker 内部通道通过转移的 `MessagePort` 连接，不挂到应用可见的 Worker 全局对象
+- `apps/host` 保留手写 UI 树 Worker demo；阶段一 React 包应用的主验证入口是 Playground
 - 判断实现范围时，以根目录 [README](../../../README.md) 和 [路线图](../../../ROADMAP.md) 的阶段状态为准
 
 ## 推荐阅读顺序
@@ -107,7 +108,7 @@
 - `apps/host/`：Host 应用入口
 - `apps/playground/`：开发调试
 
-其中 `runtime`、`react`、`protocol`、`security`、`capabilities`、`renderer`、`ui`、`host` 和 `playground` 已存在；`devtools`、`inspector` 等路径仍属于后续设计目标。
+其中 `runtime`、`react`、`protocol`、`security`、`capabilities`、`renderer`、`ui`、`container`、`adapter`、`loader`、`host` 和 `playground` 已存在；`devtools`、`inspector` 等路径属于后续设计目标。
 
 ---
 

@@ -18,13 +18,5 @@ export type {
   AegisContainer,
   ContextInjection,
 } from './types.js';
-export type {
-  SandboxConfig,
-} from './sandbox.js';
-export type {
-  InternalMessage,
-  AegisProtocolChannel,
-  AegisCapabilityChannel,
-  AegisResourceTracker,
-  AegisContext,
-} from './context-injector.js';
+export type { SandboxConfig } from './sandbox.js';
+export type { InternalMessage, AegisProtocolChannel } from './context-injector.js';

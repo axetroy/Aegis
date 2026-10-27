@@ -20,17 +20,9 @@ import {
   removeGlobalStyleSheet,
   setGlobalStyleSheet,
 } from './host-config';
+import { getAegisProtocolChannel } from './protocol-bridge';
 
 const reconciler = ReactReconciler(AegisHostConfig as unknown as HostConfig);
-
-interface ProtocolMessage {
-  type: string;
-  payload?: unknown;
-}
-
-interface ProtocolChannel {
-  onMessage(handler: (message: ProtocolMessage) => void): () => void;
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -50,7 +42,7 @@ export function render(element: React.ReactElement): () => void {
     (error: unknown) => console.warn('[Aegis] Recoverable error:', error),
     null,
   );
-  const protocol = (self as unknown as { __aegis_protocol?: ProtocolChannel }).__aegis_protocol;
+  const protocol = getAegisProtocolChannel();
   const unsubscribe = protocol?.onMessage((message) => {
     if (message.type !== 'protocol' || !isRecord(message.payload)) return;
     if (message.payload['type'] === 'event:dispatch') {

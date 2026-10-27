@@ -42,7 +42,7 @@ function CounterApp() {
         }}
       >
         <Button
-          onClick={() => setCount(c => c - 1)}
+          onClick={() => setCount((c) => c - 1)}
           style={{
             backgroundColor: '#FF3B30',
             width: 60,
@@ -66,7 +66,7 @@ function CounterApp() {
         </Button>
 
         <Button
-          onClick={() => setCount(c => c + 1)}
+          onClick={() => setCount((c) => c + 1)}
           style={{
             backgroundColor: '#34C759',
             width: 60,
@@ -145,7 +145,16 @@ function ContainerCounterApp() {
         const response = await fetch('/counter-app.aegis');
         if (!response.ok) throw new Error(`加载应用包失败 (${response.status})`);
 
-        const nextContainer = await Container.fromPackage(await response.blob());
+        const sdkUrl = new URL(
+          'aegis-sdk/sdk.js',
+          new URL(import.meta.env.BASE_URL, window.location.href),
+        ).href;
+        const nextContainer = await Container.fromPackage(await response.blob(), {
+          sdkModules: {
+            publicUrl: sdkUrl,
+            bootstrapUrl: sdkUrl,
+          },
+        });
         if (disposed) {
           await nextContainer.destroy();
           return;
@@ -163,7 +172,11 @@ function ContainerCounterApp() {
         });
 
         unsubscribe = appContainer.onMessage((message) => {
-          if (message.type === 'protocol' && typeof message.payload === 'object' && message.payload !== null) {
+          if (
+            message.type === 'protocol' &&
+            typeof message.payload === 'object' &&
+            message.payload !== null
+          ) {
             const inner = message.payload as { type?: unknown; payload?: unknown };
             if (typeof inner.type === 'string') {
               renderer?.handleMessage({
@@ -172,14 +185,17 @@ function ContainerCounterApp() {
               });
             }
           } else if (message.type === '__aegis_error') {
-            setStatus(`应用运行失败: ${String((message.payload as { message?: unknown })?.message ?? '未知错误')}`);
+            setStatus(
+              `应用运行失败: ${String((message.payload as { message?: unknown })?.message ?? '未知错误')}`,
+            );
           }
         });
 
         await appContainer.initialize();
         if (!disposed) setStatus(`运行中 · ${appContainer.manifest.name}`);
       } catch (error) {
-        if (!disposed) setStatus(`加载失败: ${error instanceof Error ? error.message : String(error)}`);
+        if (!disposed)
+          setStatus(`加载失败: ${error instanceof Error ? error.message : String(error)}`);
       }
     };
 
@@ -196,14 +212,19 @@ function ContainerCounterApp() {
   return (
     <View style={{ padding: 16, backgroundColor: '#f3f6f4', borderRadius: 8 }}>
       <Text style={{ fontSize: 13, color: '#64716e', marginBottom: 12 }}>{status}</Text>
-      <div ref={renderTarget} style={{ minHeight: 240, display: 'flex', justifyContent: 'center' }} />
+      <div
+        ref={renderTarget}
+        style={{ minHeight: 240, display: 'flex', justifyContent: 'center' }}
+      />
     </View>
   );
 }
 
 // 主应用
 function App() {
-  const [currentApp, setCurrentApp] = React.useState<'counter' | 'theme' | 'container'>('container');
+  const [currentApp, setCurrentApp] = React.useState<'counter' | 'theme' | 'container'>(
+    'container',
+  );
 
   return (
     <View
