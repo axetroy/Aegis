@@ -1,7 +1,7 @@
 /**
  * @aegis/container - 沙箱化全局对象
  *
- * 在 Worker 中替换全局对象，阻止应用直接访问底层 API
+ * 在当前调用上下文中拦截全局方法。Container 不在 Host 全局使用此 helper。
  */
 
 // 沙箱化配置
@@ -31,9 +31,9 @@ function getGlobal(): typeof self {
 }
 
 /**
- * 沙箱化 Worker 全局对象
+ * 拦截当前上下文的全局对象
  *
- * 替换 self.postMessage 和 self.close，阻止应用直接通信
+ * Worker 与 Host 的正式边界由 Container 私有 MessagePort 提供。
  */
 export function createSandbox(config: Partial<SandboxConfig> = {}): {
   restore: () => void;
@@ -49,7 +49,7 @@ export function createSandbox(config: Partial<SandboxConfig> = {}): {
 
   // 拦截 postMessage
   if (cfg.interceptPostMessage && ctx.postMessage) {
-    ctx.postMessage = ((message: unknown, ...args: unknown[]) => {
+    ctx.postMessage = ((message: unknown) => {
       // 捕获消息而不是发送
       if (message && typeof message === 'object' && 'type' in message) {
         interceptedMessages.push(message as { type: string; payload?: unknown });
@@ -78,17 +78,17 @@ export function createSandbox(config: Partial<SandboxConfig> = {}): {
 /**
  * 获取被拦截的消息列表
  */
-export function getInterceptedMessages(
-  sandbox: { interceptedMessages: Array<{ type: string; payload?: unknown }> }
-): Array<{ type: string; payload?: unknown }> {
+export function getInterceptedMessages(sandbox: {
+  interceptedMessages: Array<{ type: string; payload?: unknown }>;
+}): Array<{ type: string; payload?: unknown }> {
   return [...sandbox.interceptedMessages];
 }
 
 /**
  * 清空被拦截的消息列表
  */
-export function clearInterceptedMessages(
-  sandbox: { interceptedMessages: Array<{ type: string; payload?: unknown }> }
-): void {
+export function clearInterceptedMessages(sandbox: {
+  interceptedMessages: Array<{ type: string; payload?: unknown }>;
+}): void {
   sandbox.interceptedMessages.length = 0;
 }

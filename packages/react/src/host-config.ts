@@ -14,14 +14,11 @@ import {
   type NodeMethod,
   type NodeRect,
 } from '@aegis/protocol';
+import { getAegisProtocolChannel } from './protocol-bridge';
 
 interface RootContainerInfo {
   appId: string;
   children: string[];
-}
-
-interface AegisProtocol {
-  sendMessage(type: string, payload?: unknown): void;
 }
 
 const instances = new Map<string, AegisInstance>();
@@ -41,7 +38,7 @@ const NODE_METHOD_TIMEOUT = 10_000;
 const MAX_PENDING_NODE_METHODS = 128;
 
 function sendMessage(type: string, payload: Record<string, unknown>): void {
-  const protocol = (self as unknown as { __aegis_protocol?: AegisProtocol }).__aegis_protocol;
+  const protocol = getAegisProtocolChannel();
   if (protocol) {
     protocol.sendMessage(type, payload);
   } else {

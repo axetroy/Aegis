@@ -14,7 +14,6 @@ import {
   type ResourceUsage,
   type AegisContainer,
 } from './types.js';
-import { createSandbox } from './sandbox.js';
 import { createContextInjector } from './context-injector.js';
 
 // 默认资源限制
@@ -41,6 +40,7 @@ export class Container implements AegisContainer {
       appId?: string;
       resourceLimits?: ContainerConfig['resourceLimits'];
       signature?: ContainerConfig['signature'];
+      sdkModules?: ContainerConfig['sdkModules'];
     },
   ): Promise<Container> {
     const { extractAegisPackage } = await import('@aegis/adapter/extract-aegis-package');
@@ -49,6 +49,7 @@ export class Container implements AegisContainer {
       appId: options?.appId || result.manifest.name || 'unknown-app',
       manifest: result.manifest,
       entryCode: result.entryCode,
+      sdkModules: options?.sdkModules,
       resourceLimits: options?.resourceLimits,
       signature: options?.signature,
     });
@@ -56,8 +57,10 @@ export class Container implements AegisContainer {
 
   private _state: ContainerState = ContainerState.Created;
   private _worker: Worker | null = null;
-  private _sandbox: ReturnType<typeof createSandbox> | null = null;
-  private _messageHandler: ReturnType<ReturnType<typeof createContextInjector>['createMessageHandler']> | null = null;
+  private _workerUrl: string | null = null;
+  private _messageHandler: ReturnType<
+    ReturnType<typeof createContextInjector>['createMessageHandler']
+  > | null = null;
   private _resourceUsage: ResourceUsage = {
     memory: 0,
     uiNodes: 0,
@@ -97,10 +100,10 @@ export class Container implements AegisContainer {
   /**
    * 初始化容器
    *
-   * 1. 创建 Worker
-   * 2. 沙箱化全局对象
-   * 3. 注入上下文通道
-   * 4. 加载用户代码
+   * 1. 创建 module Worker
+   * 2. 转移私有 MessagePort
+   * 3. 初始化宿主 SDK
+   * 4. 导入应用 ESM
    */
   async initialize(): Promise<void> {
     if (this._state !== ContainerState.Created) {
@@ -110,33 +113,45 @@ export class Container implements AegisContainer {
     this.setState(ContainerState.Initializing);
 
     try {
-      // 1. 创建 Worker（使用 Blob URL 实现完全隔离）
-      const injectionCode = createContextInjector(this._config).generateInjectionCode();
-      const workerCode = `
-        ${injectionCode}
-        // === 用户代码 ===
-        ${this._config.entryCode}
-      `;
+      // 1. 创建 module Worker bootstrap
+      const workerCode = createContextInjector(this._config).generateInjectionCode();
       const blob = new Blob([workerCode], { type: 'application/javascript' });
       const workerUrl = URL.createObjectURL(blob);
-      this._worker = new Worker(workerUrl);
+      this._workerUrl = workerUrl;
+      this._worker = new Worker(workerUrl, { type: 'module' });
 
-      // 2. 创建沙箱
-      this._sandbox = createSandbox();
+      // 2. 创建私有 Host / Worker 通道
+      const channel = new MessageChannel();
+      this._messageHandler = createContextInjector(this._config).createMessageHandler(
+        this._worker,
+        channel.port1,
+      );
 
-      // 3. 创建消息处理器
-      this._messageHandler = createContextInjector(this._config).createMessageHandler(this._worker);
-
-      // 4. 监听 Worker 消息
+      // 3. 监听 Worker 内部通道
       this._messageHandler.onMessageFromWorker((message) => {
         this.handleWorkerMessage(message);
       });
 
-      // 5. 释放 Blob URL
-      URL.revokeObjectURL(workerUrl);
+      const entryCode = this._config.sdkModules
+        ? rewriteSdkImports(this._config.entryCode, this._config.sdkModules.publicUrl)
+        : this._config.entryCode;
+      this._worker.postMessage(
+        {
+          type: '__aegis_initialize',
+          payload: { entryCode, sdkModules: this._config.sdkModules },
+        },
+        [channel.port2],
+      );
+      await this._messageHandler.ready;
 
       this.setState(ContainerState.Running);
     } catch (error) {
+      this._worker?.terminate();
+      this._worker = null;
+      this._messageHandler?.destroy();
+      this._messageHandler = null;
+      if (this._workerUrl) URL.revokeObjectURL(this._workerUrl);
+      this._workerUrl = null;
       this.setState(ContainerState.Error);
       throw error;
     }
@@ -223,17 +238,15 @@ export class Container implements AegisContainer {
       this._worker.terminate();
       this._worker = null;
     }
+    if (this._workerUrl) {
+      URL.revokeObjectURL(this._workerUrl);
+      this._workerUrl = null;
+    }
 
     // 清理消息处理器
     if (this._messageHandler) {
       this._messageHandler.destroy();
       this._messageHandler = null;
-    }
-
-    // 恢复沙箱
-    if (this._sandbox) {
-      this._sandbox.restore();
-      this._sandbox = null;
     }
 
     // 清理处理器
@@ -293,4 +306,16 @@ export class Container implements AegisContainer {
     // 更新资源使用
     this._resourceUsage.messageQueue = Math.max(0, this._resourceUsage.messageQueue - 1);
   }
+}
+
+const SDK_MODULES = new Set(['@aegis/react', '@aegis/ui', 'react', 'react/jsx-runtime']);
+
+export function rewriteSdkImports(entryCode: string, publicSdkUrl: string): string {
+  return entryCode.replace(
+    /(\bfrom\s*|\bimport\s*)(["'])(@aegis\/react|@aegis\/ui|react(?:\/jsx-runtime)?)\2/g,
+    (specifier, prefix: string, _quote: string, moduleName: string) => {
+      if (!SDK_MODULES.has(moduleName)) return specifier;
+      return `${prefix}${JSON.stringify(publicSdkUrl)}`;
+    },
+  );
 }

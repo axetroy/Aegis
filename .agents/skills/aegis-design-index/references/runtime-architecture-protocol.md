@@ -84,16 +84,10 @@ Container
   │     ├── RemoteURLAdapter     远程 URL（HTTPS）
   │     └── FileSystemAdapter    文件系统路径
   │
-  ├── 2. Worker 创建              隔离执行环境
-  │
-  ├── 3. Context 注入             沙箱化全局对象
-  │     ├── 替换 self.postMessage  → 拦截
-  │     ├── 替换 self.close       → 拦截
-  │     ├── 注入 __aegis_protocol  → 内部通信通道（用户不可见）
-  │     ├── 注入 __aegis_capability → 内部能力通道（用户不可见）
-  │     └── 注入 __aegis_resource   → 内部资源追踪（用户不可见）
-  │
-  └── 4. 加载用户代码              执行应用入口（通过 SDK hooks 交互）
+  ├── 2. Worker module 创建       隔离执行环境
+  ├── 3. 转移私有 MessagePort     Host 不监听 Worker 全局 message
+  ├── 4. 导入宿主可信 SDK ESM     初始化模块私有协议客户端
+  └── 5. 加载用户 ESM             只导入公开 React/UI SDK
 ```
 
 ### Container 生命周期
@@ -166,22 +160,20 @@ interface PackageCode {
 
 ### Context 注入机制
 
-Worker 创建后，Host 在执行用户代码之前注入受限上下文。这是安全的关键环节：
+Worker 创建后，Host 在执行用户代码之前先启动 bootstrap。Host 与 Worker 通过转移的 `MessagePort` 通信，应用入口作为独立 ESM 模块加载：
 
 ```text
 Worker 全局作用域
   │
-  ├── 原生 API        ← 被替换或移除
-  │   self.postMessage  → 拦截（通过内部 Protocol 通道）
-  │   self.close        → 拦截
-  │   importScripts     → 拦截
-  │   fetch             → 拦截（通过 Capability）
-  │   XMLHttpRequest    → 移除
+  ├── Worker 原生全局
+  │   self.postMessage   → Host 不监听 Worker 全局 message
+  │   self / fetch       → Worker 原生 API；网络策略尚未接入 Host transport
   │
-  ├── 注入的内部通道   ← 框架 SDK 内部使用，用户不可见
-  │   __aegis_protocol  → Protocol Client（仅 Reconciler / SDK 内部调用）
-  │   __aegis_capability → Capability Client（仅 SDK hooks 内部调用）
-  │   __aegis_resource   → Resource Tracker（仅 SDK 内部调用）
+  ├── 宿主提供的可信 SDK ESM
+  │   协议客户端          → SDK 模块闭包中的私有状态
+  │   初始化入口          → 在应用 ESM 导入前调用一次
+  │
+  ├── 转移的 MessagePort → 只保存在 bootstrap / SDK 闭包中
   │
   └── 用户代码         ← 通过框架 SDK（hooks / components）与外界交互
 ```
@@ -196,16 +188,16 @@ Worker 全局作用域
 
 ```jsx
 // 用户代码 — 使用 React Hooks
-const [count, setCount] = useState(0)
-const { data } = useAegisStorage('my-key')
-const camera = useAegisCapability('camera')
+const [count, setCount] = useState(0);
+const { data } = useAegisStorage('my-key');
+const camera = useAegisCapability('camera');
 ```
 
 SDK 内部（用户不可见）：
 
 ```text
 useAegisStorage('my-key')
-  → 内部调用 __aegis_protocol.sendMessage('storage:get', { key })
+  → 内部调用模块私有 protocolChannel.sendMessage('storage:get', { key })
   → Host 验证 → 执行 → 返回结果
 
 useAegisCapability('camera')
@@ -218,10 +210,10 @@ useAegisCapability('camera')
 ```text
 // 用户代码
 self.postMessage({ type: 'capability:grant', ... })
-// ↑ TypeError: self.postMessage is not a function
+// ↑ 消息不会进入 Host 协议处理器；Host 只监听转移的 MessagePort
 
-__aegis_protocol.sendMessage('capability:grant', ...)
-// ↑ TypeError: __aegis_protocol is not defined（用户作用域中不存在）
+globalThis.__aegis_protocol
+// ↑ undefined；协议通道不挂到 Worker 全局对象
 ```
 
 ---
@@ -332,12 +324,7 @@ Chakra
 例如：
 
 ```jsx
-import {
-  View,
-  Text,
-  Button,
-  Input
-} from "@aegis/ui"
+import { View, Text, Button, Input } from '@aegis/ui';
 ```
 
 ---
@@ -350,21 +337,15 @@ JSX 是 Aegis 的推荐 UI 描述语言。
 
 ```jsx
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <View>
-      <Text>
-        Count: {count}
-      </Text>
+      <Text>Count: {count}</Text>
 
-      <Button
-        onClick={() => setCount(c => c + 1)}
-      >
-        +
-      </Button>
+      <Button onClick={() => setCount((c) => c + 1)}>+</Button>
     </View>
-  )
+  );
 }
 ```
 
@@ -397,7 +378,7 @@ UI 协议是 Aegis 的核心安全边界之一。
 Worker 不允许直接调用：
 
 ```js
-document.createElement()
+document.createElement();
 ```
 
 而是产生：
@@ -550,17 +531,17 @@ Worker 不直接获得真实 Event Object。
 
 ```ts
 interface AegisEvent {
-  type: string
-  target: NodeId
-  currentTarget: NodeId
+  type: string;
+  target: NodeId;
+  currentTarget: NodeId;
 
-  value?: string
-  checked?: boolean
+  value?: string;
+  checked?: boolean;
 
-  clientX?: number
-  clientY?: number
+  clientX?: number;
+  clientY?: number;
 
-  key?: string
+  key?: string;
 }
 ```
 

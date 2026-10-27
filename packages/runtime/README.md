@@ -1,6 +1,6 @@
 # @aegis/runtime
 
-Worker 运行时基础。在 Worker 线程中初始化 `__aegis_protocol` 全局对象，建立与 Host 的消息通道，驱动 React Reconciler。
+Worker 运行时基础。Host 将私有 `MessagePort` 转移给 Worker bootstrap；宿主提供的 ESM SDK 在独立模块作用域中持有协议客户端并驱动 React Reconciler，应用代码不通过 Worker 全局对象访问协议通道。
 
 ## 导出
 

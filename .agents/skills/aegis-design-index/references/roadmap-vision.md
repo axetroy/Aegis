@@ -30,19 +30,15 @@ DOM
 
 ```jsx
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <View>
       <Text>{count}</Text>
 
-      <Button
-        onClick={() => setCount(c => c + 1)}
-      >
-        +
-      </Button>
+      <Button onClick={() => setCount((c) => c + 1)}>+</Button>
     </View>
-  )
+  );
 }
 ```
 
@@ -170,7 +166,7 @@ SDK 提供的 API（用户唯一入口）：
   Aegis Components: <AegisView>, <AegisText>, <AegisButton>, <AegisInput>
 
 SDK 不暴露的（用户永远无法访问）：
-  Protocol API:    __aegis_protocol.sendMessage(...)
+  Protocol API:    SDK 模块闭包中的内部客户端
   Capability API:  __aegis_capability.request(...)
   Worker API:      self.postMessage(...)
 ```
@@ -260,30 +256,20 @@ Aegis 最终希望做到：
 开发者只需要写：
 
 ```jsx
-import {
-  View,
-  Text,
-  Button
-} from "@aegis/ui"
+import { View, Text, Button } from '@aegis/ui';
 
 export default function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <View>
       <Text>Hello Aegis</Text>
 
-      <Text>
-        {count}
-      </Text>
+      <Text>{count}</Text>
 
-      <Button
-        onClick={() => setCount(c => c + 1)}
-      >
-        Increment
-      </Button>
+      <Button onClick={() => setCount((c) => c + 1)}>Increment</Button>
     </View>
-  )
+  );
 }
 ```
 

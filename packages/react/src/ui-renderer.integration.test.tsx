@@ -4,6 +4,7 @@ import { UIMessageType } from '@aegis/protocol';
 import { Button, Form, Input, ScrollView } from '@aegis/ui';
 import { createRenderer } from '@aegis/renderer';
 import { render } from './index';
+import { getAegisProtocolChannel, setAegisProtocolChannel } from './protocol-bridge';
 
 describe('Aegis UI renderer integration', () => {
   it('delivers input, focus, scroll, and form events to worker callbacks', async () => {
@@ -16,9 +17,8 @@ describe('Aegis UI renderer integration', () => {
         return () => handlers.delete(handler);
       },
     };
-    const workerSelf = self as unknown as { __aegis_protocol?: typeof protocol };
-    const previousProtocol = workerSelf.__aegis_protocol;
-    workerSelf.__aegis_protocol = protocol;
+    const previousProtocol = getAegisProtocolChannel();
+    setAegisProtocolChannel(protocol);
 
     const host = document.createElement('div');
     document.body.appendChild(host);
@@ -93,7 +93,7 @@ describe('Aegis UI renderer integration', () => {
       unmount();
       renderer.destroy();
       host.remove();
-      workerSelf.__aegis_protocol = previousProtocol;
+      setAegisProtocolChannel(previousProtocol);
     }
   });
 });

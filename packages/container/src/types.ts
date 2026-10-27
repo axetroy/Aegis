@@ -15,6 +15,11 @@ export interface ContainerConfig {
   entryCode: string;
   /** 依赖模块代码 */
   modules?: Map<string, string>;
+  /** 由宿主提供的可信 SDK ESM 入口 */
+  sdkModules?: {
+    publicUrl: string;
+    bootstrapUrl: string;
+  };
   /** 资源限制 */
   resourceLimits?: {
     maxMemory?: number;
@@ -71,11 +76,11 @@ export interface ContextInjection {
   interceptPostMessage: boolean;
   /** 沙箱化 close */
   interceptClose: boolean;
-  /** 注入 __aegis_protocol 通道 */
+  /** 通过私有 MessagePort 连接协议通道 */
   protocolChannel: boolean;
-  /** 注入 __aegis_capability 通道 */
+  /** 通过私有 MessagePort 连接能力通道 */
   capabilityChannel: boolean;
-  /** 注入 __aegis_resource 追踪 */
+  /** 通过私有 MessagePort 连接资源追踪 */
   resourceTracking: boolean;
 }
 

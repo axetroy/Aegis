@@ -4,24 +4,24 @@
 
 **让不受信任的代码构建 UI，但永远不能拥有宿主。**
 
-Aegis 是一个面向安全 UI 运行时的实现原型，包含 Worker、React、协议、能力和应用包等模块；完整的安全应用执行链路仍在开发中。
+Aegis 是一个面向安全 UI 运行时的实现原型。Playground 已将 `.aegis` 计数器应用装入 Worker，由 React Reconciler 生成 UI 协议消息并在 Host DOM Renderer 中渲染；能力平台和完整生产级安全控制仍在开发中。
 
 ## 核心特性
 
-- 🔒 **Worker 原型** - 宿主演示在 Worker 中运行手写 UI 树；尚未接入 React 应用运行时或完整能力沙箱
-- ⚛️ **React 模块** - 提供 JSX、Hooks 与 reconciler 相关模块，尚未贯通 Worker 到 Host 的 React 渲染链路
-- 🎯 **UI Protocol** - 定义清晰的 UI 通信协议
+- 🔒 **Worker 容器** - `.aegis` 计数器应用在独立 Worker 中运行，Host 只接收私有 `MessagePort` 上的桥接消息
+- ⚛️ **React Worker 渲染** - React、Hooks、JSX 与 Host Renderer 已在 Playground 中串通
+- 🎯 **SDK-only UI 通信** - 应用导入宿主提供的 ESM SDK；协议通道不挂到 Worker 全局对象
 - 📦 **能力系统** - 显式的权限控制和资源限制
 - 🛡️ **事件隔离** - 事件处理在安全边界内进行
 
 ## 当前进度
 
-| 阶段 | 状态 | 说明 |
-|------|------|------|
-| 阶段一：MVP | 🟡 部分完成 | Worker UI demo 与独立 React 模块存在，但 React → Worker → Host 尚未端到端连通 |
-| 阶段二：能力与权限 | 🟡 部分完成 | 权限与 Storage 已实现；网络 transport 尚未接入 Host，Camera/Location 为接口占位 |
-| 阶段三：应用包与签名 | 🟡 部分完成 | .aegis、Manifest 与签名工具已实现；模块加载、依赖解析及沙箱执行尚未实现 |
-| 阶段四：平台与生态 | 📋 规划 | 多应用管理、应用商店、DevTools |
+| 阶段                 | 状态          | 说明                                                                            |
+| -------------------- | ------------- | ------------------------------------------------------------------------------- |
+| 阶段一：MVP          | ✅ 原型已贯通 | `.aegis` React 计数器在 Worker 执行，事件和 UI 更新经 Host Renderer 闭环        |
+| 阶段二：能力与权限   | 🟡 部分完成   | 权限与 Storage 已实现；网络 transport 尚未接入 Host，Camera/Location 为接口占位 |
+| 阶段三：应用包与签名 | 🟡 部分完成   | .aegis、Manifest 与签名工具已实现；模块加载、依赖解析及沙箱执行尚未实现         |
+| 阶段四：平台与生态   | 📋 规划       | 多应用管理、应用商店、DevTools                                                  |
 
 ## 架构
 
@@ -41,6 +41,8 @@ Aegis 是一个面向安全 UI 运行时的实现原型，包含 Worker、React�
     UI Protocol        Capability API
           │                   │
           └─────────┬─────────┘
+                    │
+        Private MessagePort bridge
                     │
               Security Boundary
                     │
@@ -92,6 +94,8 @@ pnpm --filter @aegis/host dev
 pnpm --filter @aegis/playground dev
 ```
 
+默认 Playground 运行已打包的 React 计数器应用；点击 `+` 可验证 Worker → Host → DOM 的事件闭环。Host 提供的 `aegis-sdk` ESM bundle 与应用包分开加载，应用代码只导入公开的 React/UI API。
+
 ### 构建
 
 ```bash
@@ -101,19 +105,18 @@ pnpm build
 ## 开发者示例
 
 ```jsx
-import { View, Text, Button } from '@aegis/ui'
+import { View, Text, Button } from '@aegis/ui';
+import { useState } from 'react';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <View>
       <Text>{count}</Text>
-      <Button onClick={() => setCount(c => c + 1)}>
-        +
-      </Button>
+      <Button onClick={() => setCount((c) => c + 1)}>+</Button>
     </View>
-  )
+  );
 }
 ```
 
@@ -129,9 +132,9 @@ function App() {
 
 ## 路线图
 
-- [ ] **阶段一：MVP** - Worker UI 演示已存在，React Worker 闭环待完成
+- [x] **阶段一：MVP** - React 应用包、Worker 执行、私有协议桥和 Host 渲染已贯通
 - [ ] **阶段二：能力与权限** - 权限与 Storage 基础已存在，Host 网络 transport 及 Camera/Location 待完成
-- [ ] **阶段三：应用包与签名** - 打包签名已存在，模块加载与沙箱执行待完成
+- [ ] **阶段三：应用包与签名** - 打包签名和基础模块加载器已存在；完整依赖解析、安装和沙箱加载流程待完成
 - [ ] **阶段四：平台与生态** - 构建完整的多应用平台
 
 详见 [ROADMAP.md](./ROADMAP.md)

@@ -42,6 +42,7 @@ import {
   type NodeRect,
 } from '@aegis/protocol';
 import { render as renderReactTree } from './index';
+import { getAegisProtocolChannel, setAegisProtocolChannel } from './protocol-bridge';
 
 // Mock postMessage
 const mockPostMessage = vi.fn();
@@ -466,9 +467,8 @@ describe('@aegis/react/host-config', () => {
           return () => handlers.delete(handler);
         },
       };
-      const workerSelf = self as unknown as { __aegis_protocol?: typeof protocol };
-      const previousProtocol = workerSelf.__aegis_protocol;
-      workerSelf.__aegis_protocol = protocol;
+      const previousProtocol = getAegisProtocolChannel();
+      setAegisProtocolChannel(protocol);
 
       const ref = React.createRef<AegisInputRef>();
       const unmount = renderReactTree(
@@ -488,7 +488,7 @@ describe('@aegis/react/host-config', () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
         expect(ref.current).toBeNull();
       } finally {
-        workerSelf.__aegis_protocol = previousProtocol;
+        setAegisProtocolChannel(previousProtocol);
       }
     });
   });
